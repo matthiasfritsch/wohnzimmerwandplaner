@@ -54,7 +54,8 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 
 - Bohrplan: Druckansicht (A4 quer, als PDF speicherbar) mit nummerierter Wand und Tabelle. Nagelhöhe = Oberkante minus Aufhänger-Offset (default 3 cm). Spezifische Regeln für TV, Platten, Pflanzen, Spiegel, Decks (2 Halter), Regal (Endplatten).
 - Export/Import als JSON (inkl. Bilder als Data-URL, Set, Varianten). Import ergänzt fehlende neue Default-Typen.
-- Autosave in `localStorage` (Key `wandplaner-v1`), Button "Neu" für leere Wand.
+- Autosave in IndexedDB (DB `wandplaner`, Store `kv`, Key `state`, Wert `{t, json}`), alle 1,5 s und beim Tab-Wechsel. Kein 5-MB-Limit mehr. `localStorage` (`wandplaner-v1`) nur noch Fallback, alte Stände ziehen beim ersten Laden automatisch um. Button "Neu" für leere Wand.
+- Bilder liegen nur lokal im Browser des jeweiligen Geräts (als JPEG-Data-URL im State), nie auf GitHub. Gerätewechsel oder Backup nur über Export/Import.
 
 ## Code-Landkarte (index.html)
 
@@ -66,7 +67,7 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 - Set-Modus: `addToSet`, `buildSet`, `selToSet`, `saveVariant/loadVariant`, `rotFor()` (Hoch/Quer unabhängig von Grundausrichtung).
 - Panels: `renderLeft` (Inventar), `renderPanel` → `renderDrawer` / `renderMulti` / `renderSBPanel` / `renderCompose` (+ `setPanel`).
 - Undo: `pushHistory(key)` vor jeder Mutation (mit key = Coalescing für Slider), `snapshot/restore`.
-- Persistenz: `saveLocal/loadLocal`, Export/Import-Handler, `printPlan()`.
+- Persistenz: `db()/idb()` (IndexedDB-Helfer), `saveLocal()` (sync aufrufbar, speichert async), `loadLocal()` (async, Init wartet darauf), Export/Import-Handler, `printPlan()`.
 
 ## Testen
 
@@ -84,4 +85,3 @@ Chromium + Playwright (Python) headless. In der Cloud-Umgebung: `pip install pla
 - Beim Entfernen aus "Meine Auswahl" bleibt eine Lücke; ob die automatisch geschlossen werden soll, ist noch offen
 - SVENSHULT und Spiegel: echte Aufhängepunkte gegen Montageanleitung prüfen
 - "Yuna Portrait" steht öffentlich im Code; ggf. neutral umbenennen, falls gewünscht
-- Autosave-Limit: localStorage ca. 5 MB, bei vielen Motiven voll; ggf. IndexedDB

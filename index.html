@@ -256,21 +256,59 @@ let scale = 2;
 let undoStack = [], redoStack = [], lastKey = null, lastT = 0, dirty = false;
 let lastGen = null;
 
-/* ---------- Autosave im Browser (klappt, sobald die Seite unter einer festen Adresse läuft, z.B. GitHub Pages) ---------- */
-const LS_KEY = 'wandplaner-v1';
-let needsSave = false, autosaveOk = null;
-function saveLocal() {
-  needsSave = false;
-  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); if (autosaveOk === false) toast('Autosave läuft wieder'); autosaveOk = true; }
-  catch (e) { if (autosaveOk !== false) toast('Autosave voll (vermutlich zu viele Bilder), bitte zusätzlich exportieren'); autosaveOk = false; }
+/* ---------- Autosave im Browser: IndexedDB (viel Platz, auch für Motive), localStorage nur noch als Fallback ---------- */
+const LS_KEY = 'wandplaner-v1', DB_NAME = 'wandplaner', DB_STORE = 'kv', DB_KEY = 'state';
+let needsSave = false, autosaveOk = null, saving = false, useIDB = !!window.indexedDB;
+let dbP = null;
+function db() {
+  if (!dbP) dbP = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(DB_STORE);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('blocked'));
+  });
+  return dbP;
+}
+function idb(mode, fn) { // eine Transaktion, liefert das Ergebnis des Requests
+  return db().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(DB_STORE, mode), req = fn(tx.objectStore(DB_STORE));
+    tx.oncomplete = () => res(req && req.result); tx.onerror = tx.onabort = () => rej(tx.error || new Error('abort'));
+  }));
+}
+function setSaveState() {
   const el = document.getElementById('saveState');
   if (el) el.textContent = autosaveOk ? 'Automatisch gespeichert' : 'Nicht gespeichert, bitte exportieren';
 }
-function loadLocal() {
-  try { const raw = localStorage.getItem(LS_KEY); if (!raw) return false; const d = JSON.parse(raw); if (d.app !== 'wandplaner') return false;
-    S = Object.assign(freshState(), d); DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); return true;
-  } catch (e) { return false; }
+function saveOk() { if (autosaveOk === false) toast('Autosave läuft wieder'); autosaveOk = true; setSaveState(); }
+function saveFail() { if (autosaveOk !== false) toast('Autosave hat nicht geklappt, bitte zusätzlich exportieren'); autosaveOk = false; setSaveState(); }
+function saveLocalStorage(json) {
+  try { localStorage.setItem(LS_KEY, json); saveOk(); } catch (e) { saveFail(); }
 }
+function saveLocal() {
+  if (saving) return; // läuft schon, needsSave bleibt stehen und der nächste Tick speichert nach
+  needsSave = false;
+  const json = JSON.stringify(S);
+  if (!useIDB) return saveLocalStorage(json);
+  saving = true;
+  idb('readwrite', st => st.put({ t:Date.now(), json }, DB_KEY))
+    .then(() => { saveOk(); try { localStorage.removeItem(LS_KEY); } catch (e) {} }) // alter Stand würde sonst beim Laden stören
+    .catch(() => { useIDB = false; saveLocalStorage(json); })
+    .finally(() => { saving = false; });
+}
+function applyLoaded(raw) {
+  const d = JSON.parse(raw); if (d.app !== 'wandplaner') return false;
+  S = Object.assign(freshState(), d); DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); return true;
+}
+async function loadLocal() {
+  if (useIDB) {
+    let rec = null;
+    try { rec = await idb('readonly', st => st.get(DB_KEY)); } catch (e) { useIDB = false; }
+    try { if (rec && rec.json && applyLoaded(rec.json)) return true; } catch (e) {}
+  }
+  try { const raw = localStorage.getItem(LS_KEY); if (raw && applyLoaded(raw)) { needsSave = useIDB; return true; } } // alter Stand: beim nächsten Tick nach IndexedDB umziehen
+  catch (e) {}
+  return false;
+}
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); // Browser bitten, die Daten nicht wegzuräumen
 setInterval(() => { if (needsSave && !drag) saveLocal(); }, 1500);
 document.addEventListener('visibilitychange', () => { if (document.hidden && needsSave) saveLocal(); });
 const ui = { tab:'suggest', autoAttach:true, anchor:'sideboard', colorFilter:null, onlyAvail:false,
@@ -1649,7 +1687,8 @@ $('#importFile').onchange = e => {
     try {
       const d = JSON.parse(txt); if (d.app !== 'wandplaner' || !Array.isArray(d.items)) throw 0;
       pushHistory(); S = Object.assign(freshState(), d);
-      DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); // neue Objekte auch in alten Plänen sel.clear(); syncHeader(); fit(); renderAll(); dirty = false; toast('Plan geladen');
+      DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); // neue Objekte auch in alten Plänen
+      sel.clear(); syncHeader(); fit(); renderAll(); dirty = false; needsSave = true; toast('Plan geladen');
     } catch (err) { toast('Das ist keine Wandplaner-Datei'); }
     e.target.value = '';
   });
@@ -1678,9 +1717,10 @@ stage.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDe
 window.addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(fit, 150); });
 
 function renderAll() { setSvgSize(); renderStatic(); renderSB(); renderItems(); renderOverlay(); renderLeft(); renderPanel(); updateUndo(); }
-const restored = loadLocal();
-syncHeader(); renderAll(); fit();
-if (restored) { toast('Letzter Stand wiederhergestellt'); $('#saveState').textContent = 'Automatisch gespeichert'; autosaveOk = true; }
+loadLocal().then(restored => {
+  syncHeader(); renderAll(); fit();
+  if (restored) { toast('Letzter Stand wiederhergestellt'); autosaveOk = true; setSaveState(); }
+});
 $('#newBtn').onclick = () => { if (!confirm('Neue, leere Wand starten? (Rückgängig geht mit Strg+Z)')) return; pushHistory(); S = freshState(); sel.clear(); syncHeader(); fit(); renderAll(); };
 </script>
 </body>
