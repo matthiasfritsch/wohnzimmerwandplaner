@@ -37,6 +37,11 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 - IKEA SVENSHULT Wandregal 60 × 35 × 20 cm, Drahtgitter, Z/S-Form (Gitterboden in der Mitte, links Platte nach unten, rechts nach oben). Horizontal/vertikal und Z/S spiegelbar, Sprühlack-Farbe wählbar (default Graugrün). Front-Darstellung nach IKEA-Produktbild; Schraubpunkte nicht verifiziert.
 - Bestand pro Typ per Klick auf den Zähler im Inventar änderbar. Eigene Objekte über "Eigenes Objekt ergänzen".
 
+### UI-Aufbau
+
+- Kopfzeile: Wandmaße + Farbe, Abstand + Ambilight, Undo/Redo, Speicherstatus (grüner Punkt, Text ab 1280 px), Bohrplan, ⋯-Menü (Neue Wand, Import, Export).
+- Schwebende Canvas-Leiste unten rechts (`#canvasbar`, fixed): Snapping/Hilfslinien/Person als Toggle-Pills, Zoom −/+ und Zoom-Anzeige in % relativ zu Fit (Klick = einpassen).
+
 ### Interaktion
 
 - Drag & Drop aus Inventar oder +, Mehrfachauswahl (Shift-Klick, Rahmen aufziehen), Pfeiltasten 1/5 cm, R drehen, Entf, Strg+D, Strg+Z/Y, Strg+A.

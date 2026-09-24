@@ -21,6 +21,28 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 14px;
 .num{width:58px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:#fff;text-align:right}
 .num.sm{width:48px}
 .spacer{flex:1}
+.save{font-size:11.5px;display:inline-flex;align-items:center;gap:6px;margin-right:2px}
+.save::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.save.bad{color:var(--danger)}
+.save.bad::before{background:var(--danger)}
+.save:empty{display:none}
+@media (max-width:1280px){ .save{font-size:0;gap:0} .save.bad{font-size:11.5px;gap:6px} }
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(30,25,15,.14);padding:5px;z-index:50}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:7px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--soft);outline:none}
+.menu small{display:block;color:var(--muted);font-size:11px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+#canvasbar{position:fixed;right:346px;bottom:40px;display:flex;gap:8px;z-index:20}
+.cb-group{display:flex;align-items:center;gap:2px;background:rgba(251,250,248,.94);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:3px;box-shadow:0 2px 10px rgba(30,25,15,.08)}
+.cb-btn{border:0;background:none;border-radius:7px;min-width:30px;height:28px;padding:0 8px;cursor:pointer;font-size:14px}
+.cb-btn:hover{background:var(--soft)}
+.cb-zoom{font-size:12px;min-width:52px;font-variant-numeric:tabular-nums}
+.ftog{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.ftog input{position:absolute;opacity:0;pointer-events:none}
+.ftog:hover{background:var(--soft)}
+.ftog:has(input:checked){background:var(--ink);color:#fff}
+.ftog:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
 .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:#cfc9bf;background:#fdfcfa}
 .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -133,27 +155,23 @@ details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:6px}
     </div>
     <div class="hgroup">
       <label>Abstand</label><input class="num sm" id="gap" type="number" min="0" step="0.5"><span class="muted">cm</span>
-      <label style="margin-left:6px" title="Mindestabstand von Kunst zum TV, damit das Ambilight Platz hat">TV / Ambilight</label><input class="num sm" id="tvGap" type="number" min="0" step="1"><span class="muted">cm</span>
-    </div>
-    <div class="hgroup">
-      <label class="tog"><input type="checkbox" id="snap"> Snapping</label>
-      <label class="tog"><input type="checkbox" id="guides"> Hilfslinien</label>
-      <label class="tog"><input type="checkbox" id="person"> Person</label>
+      <label style="margin-left:6px" title="Mindestabstand von Kunst zum TV, damit das Ambilight Platz hat">Ambilight</label><input class="num sm" id="tvGap" type="number" min="0" step="1"><span class="muted">cm</span>
     </div>
     <div class="spacer"></div>
     <button class="btn icon ghost" id="undo" title="Rückgängig (Strg+Z)">↶</button>
     <button class="btn icon ghost" id="redo" title="Wiederholen (Strg+Shift+Z)">↷</button>
     <div class="hgroup">
-      <button class="btn icon ghost" id="zout" title="Verkleinern">−</button>
-      <button class="btn ghost" id="zfit" title="Einpassen">Fit</button>
-      <button class="btn icon ghost" id="zin" title="Vergrößern">+</button>
-    </div>
-    <div class="hgroup">
-      <span id="saveState" class="muted" style="font-size:11.5px;margin-right:4px"></span>
-      <button class="btn ghost" id="newBtn" title="Leere Wand mit TV und Sideboard">Neu</button>
-      <button class="btn" id="importBtn">Import</button>
-      <button class="btn" id="exportBtn">Export</button>
+      <span id="saveState" class="save muted"></span>
       <button class="btn primary" id="printBtn">Bohrplan</button>
+      <div class="menu-wrap">
+        <button class="btn icon ghost" id="moreBtn" title="Mehr" aria-haspopup="menu" aria-expanded="false">⋯</button>
+        <div class="menu" id="moreMenu" role="menu" hidden>
+          <button role="menuitem" id="newBtn" title="Leere Wand mit TV und Sideboard">Neue Wand<small>Leer, mit TV und Sideboard</small></button>
+          <hr>
+          <button role="menuitem" id="importBtn">Plan importieren<small>JSON-Datei laden</small></button>
+          <button role="menuitem" id="exportBtn">Plan exportieren<small>Backup inkl. Bilder</small></button>
+        </div>
+      </div>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
     </div>
   </header>
@@ -172,6 +190,18 @@ details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:6px}
         </defs>
         <g id="L-static"></g><g id="L-sb"></g><g id="L-halo"></g><g id="L-items"></g><g id="L-overlay"></g><g id="L-guides"></g>
       </svg>
+    </div>
+    <div id="canvasbar">
+      <div class="cb-group">
+        <label class="ftog" title="Snapping (Alt beim Ziehen: aus)"><input type="checkbox" id="snap">Snapping</label>
+        <label class="ftog" title="Augenhöhe und Wandmitte"><input type="checkbox" id="guides">Hilfslinien</label>
+        <label class="ftog" title="Person als Größenvergleich"><input type="checkbox" id="person">Person</label>
+      </div>
+      <div class="cb-group">
+        <button class="cb-btn" id="zout" title="Verkleinern">−</button>
+        <button class="cb-btn cb-zoom" id="zfit" title="Einpassen">Fit</button>
+        <button class="cb-btn" id="zin" title="Vergrößern">+</button>
+      </div>
     </div>
     <p id="hint">Ziehen aus dem Inventar oder + klicken · Shift-Klick bzw. Rahmen aufziehen: Mehrfachauswahl · Alt beim Ziehen: ohne Snapping · R drehen · Pfeile 1 cm (Shift 5 cm) · Entf löschen · Strg+D duplizieren · Bild direkt auf einen Rahmen ziehen setzt das Motiv</p>
   </main>
@@ -276,7 +306,8 @@ function idb(mode, fn) { // eine Transaktion, liefert das Ergebnis des Requests
 }
 function setSaveState() {
   const el = document.getElementById('saveState');
-  if (el) el.textContent = autosaveOk ? 'Automatisch gespeichert' : 'Nicht gespeichert, bitte exportieren';
+  if (el) { el.textContent = autosaveOk ? 'Gespeichert' : 'Nicht gespeichert, bitte exportieren'; el.classList.toggle('bad', !autosaveOk);
+    el.title = autosaveOk ? 'Automatisch im Browser gespeichert' : 'Autosave hat nicht geklappt. Über ⋯ exportieren'; }
 }
 function saveOk() { if (autosaveOk === false) toast('Autosave läuft wieder'); autosaveOk = true; setSaveState(); }
 function saveFail() { if (autosaveOk !== false) toast('Autosave hat nicht geklappt, bitte zusätzlich exportieren'); autosaveOk = false; setSaveState(); }
@@ -382,10 +413,12 @@ function setSvgSize() {
 }
 function fit() {
   const st = $('#stage');
-  scale = Math.max(0.5, Math.min((st.clientWidth - 50) / (W() + 2 * M), (st.clientHeight - 80) / (H() + M + 16)));
-  setSvgSize(); renderStatic(); renderOverlay();
+  scale = fitScale = Math.max(0.5, Math.min((st.clientWidth - 50) / (W() + 2 * M), (st.clientHeight - 80) / (H() + M + 16)));
+  setSvgSize(); renderStatic(); renderOverlay(); zoomLabel();
 }
-function zoom(f) { scale = clamp(scale * f, 0.4, 12); setSvgSize(); renderStatic(); renderOverlay(); }
+let fitScale = 1;
+function zoom(f) { scale = clamp(scale * f, 0.4, 12); setSvgSize(); renderStatic(); renderOverlay(); zoomLabel(); }
+function zoomLabel() { const el = $('#zfit'); if (el) { const pct = Math.round(scale / fitScale * 100); el.textContent = pct === 100 ? 'Fit' : pct + ' %'; el.title = pct === 100 ? 'Eingepasst' : 'Klick: einpassen'; } }
 
 function renderStatic() {
   const fs = 11 / scale, w = W(), h = H();
@@ -1713,6 +1746,12 @@ $('#person').onchange = e => { S.person = e.target.checked; renderStatic(); };
 $('#undo').onclick = undo; $('#redo').onclick = redo;
 $('#zin').onclick = () => zoom(1.2); $('#zout').onclick = () => zoom(1 / 1.2); $('#zfit').onclick = fit;
 $('#printBtn').onclick = printPlan;
+const moreMenu = $('#moreMenu'), moreBtn = $('#moreBtn');
+function toggleMenu(open) { moreMenu.hidden = !open; moreBtn.setAttribute('aria-expanded', open); if (open) moreMenu.querySelector('button').focus(); }
+moreBtn.onclick = e => { e.stopPropagation(); toggleMenu(moreMenu.hidden); };
+moreMenu.addEventListener('click', e => { if (e.target.closest('button')) toggleMenu(false); });
+document.addEventListener('pointerdown', e => { if (!moreMenu.hidden && !e.target.closest('.menu-wrap')) toggleMenu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !moreMenu.hidden) { toggleMenu(false); moreBtn.focus(); e.stopImmediatePropagation(); } }, true);
 stage.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.1 : 1 / 1.1); } }, { passive:false });
 window.addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(fit, 150); });
 
