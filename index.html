@@ -256,7 +256,7 @@ const DEFAULT_TYPES = [
   F(28,35,29,36,'Schwarz',2), F(18,24,24,30,'Weiss',1), F(24,30,30,36,'Weiss',1), F(30,40,35,45,'Schwarz',1),
   F(30,45,35,50,'Orange',1), F(40,50,42,52,'Schwarz',2), F(43,53,43,53,'Holz',1,'Moosbild / Fixes Motiv'),
   F(30,30,31,31,'Schwarz',1), F(10.5,15,14,19,'Gold',2), F(18,24,25,31,'Gold',1), F(13,18,17,22,'Gold',1),
-  F(13,18,18,23,'Gold',1), F(50,70,53.5,73.5,'Schwarz',1), F(43.5,69,43.5,69,'Schwarz',1,'Golden Ratio / Fixes Motiv'),
+  F(13,18,18,23,'Gold',1), F(50,70,53.5,73.5,'Schwarz',1), { kind:'golden', w:69, h:43.5, iw:69, ih:43.5, color:'Schwarz', count:1, note:'Metall-Wandkunst, Fibonacci-Spirale, fix quer', title:'Golden Ratio' },
   F(61,91,62.5,93,'Schwarz',1), F(61,91,62.5,93,'Weiss',1), F(18,24,21,27,'Gold',1,'Fisch / Fixes Motiv'),
   F(13,18,21,27,'Schwarz',9), F(18.5,22,18.5,22,'Grün',1,'Fisch / Fixes Motiv'),
   F(25,30,25,30,'Weiss',1,'Rahmen mit Löchern / Fixe Form','holes'), F(22,28,22,28,'Weiss',1,'Ovaler Rahmen / Fixe Form','oval'),
@@ -335,9 +335,16 @@ function saveLocal() {
     .catch(() => { useIDB = false; saveLocalStorage(json); })
     .finally(() => { saving = false; });
 }
+function syncTypes() { // neue Objekte auch in alten Plänen, Golden Ratio von Rahmen auf Wandkunst umziehen
+  DEFAULT_TYPES.forEach(t => {
+    const i = S.types.findIndex(x => x.id === t.id);
+    if (i < 0) S.types.push({ ...t });
+    else if (t.kind === 'golden' && S.types[i].kind !== 'golden') { S.types[i] = { ...t, count:S.types[i].count }; S.items.forEach(it => { if (it.typeId === t.id) it.rot = false; }); }
+  });
+}
 function applyLoaded(raw) {
   const d = JSON.parse(raw); if (d.app !== 'wandplaner') return false;
-  S = Object.assign(freshState(), d); DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); return true;
+  S = Object.assign(freshState(), d); syncTypes(); return true;
 }
 async function loadLocal() {
   if (useIDB) {
@@ -365,7 +372,7 @@ const isTV = it => !!it && T(it.typeId) && T(it.typeId).kind === 'tv';
 const tvItem = () => S.items.find(isTV);
 /* Abstand zwischen zwei Objekten: am TV gilt der größere Ambilight-Abstand */
 const gapPair = (a, b) => (isTV(a) || isTV(b)) ? Math.max(S.tvGap, S.gap) : S.gap;
-function dims(it) { const t = T(it.typeId); return it.rot ? { w:t.h, h:t.w } : { w:t.w, h:t.h }; }
+function dims(it) { const t = T(it.typeId); return it.rot && canRotate(t) ? { w:t.h, h:t.w } : { w:t.w, h:t.h }; }
 function rectOf(it) { const d = dims(it); return { x:it.x, y:it.y, w:d.w, h:d.h }; }
 function bboxOf(rs) {
   if (!rs.length) return null;
@@ -527,6 +534,22 @@ function motif(it, x, y, cw, ch, ellipse) {
   return s + '</g>';
 }
 
+/* Golden-Ratio-Wandkunst: Rahmen, Teilungslinien und Viertelkreis-Spirale aus Metall.
+   Gerechnet im exakten Goldenen Rechteck, dann minimal auf das echte Maß gestreckt. */
+function goldenSVG(w, h, sw = 1) {
+  const PHI = (1 + Math.sqrt(5)) / 2, gh = w / PHI, c = '#1a1a1a';
+  let x = 0, y = 0, rw = w, rh = gh, lines = '', arcs = '';
+  for (let k = 0; k < 9; k++) {
+    const d = 'LTRB'[k % 4];
+    if (d === 'L') { const q = rh; arcs += `M${x} ${y + q} A${q} ${q} 0 0 1 ${x + q} ${y} `; x += q; rw -= q; lines += `M${x} ${y}V${y + rh} `; }
+    else if (d === 'T') { const q = rw; arcs += `M${x} ${y} A${q} ${q} 0 0 1 ${x + q} ${y + q} `; y += q; rh -= q; lines += `M${x} ${y}H${x + rw} `; }
+    else if (d === 'R') { const q = rh; arcs += `M${x + rw} ${y} A${q} ${q} 0 0 1 ${x + rw - q} ${y + q} `; rw -= q; lines += `M${x + rw} ${y}V${y + rh} `; }
+    else { const q = rw; arcs += `M${x + q} ${y + rh} A${q} ${q} 0 0 1 ${x} ${y + rh - q} `; rh -= q; lines += `M${x} ${y + rh}H${x + rw} `; }
+  }
+  const o = 0.7 * sw;
+  return `<g transform="scale(1 ${h / gh})"><rect x="${o}" y="${o}" width="${w - 2 * o}" height="${gh - 2 * o}" fill="none" stroke="${c}" stroke-width="${1.4 * sw}"/>
+    <path d="${lines}" fill="none" stroke="${c}" stroke-width="${.55 * sw}"/><path d="${arcs}" fill="none" stroke="${c}" stroke-width="${.75 * sw}" stroke-linecap="round"/></g>`;
+}
 function itemMarkup(it) {
   const t = T(it.typeId), { w, h } = dims(it);
   let s = '';
@@ -540,6 +563,10 @@ function itemMarkup(it) {
     s += motif(it, 0, 0, w, h);
     s += `<rect width="${w}" height="${h}" fill="none" stroke="rgba(0,0,0,.25)" stroke-width=".25"/>`;
     s += `<rect x="${w * 0.28}" y="${h - 1.2}" width="${w * 0.44}" height="2.4" rx=".5" fill="#1b1b1b"/>`;
+  } else if (t.kind === 'golden') {
+    s += `<g opacity=".18" filter="url(#sh)" transform="translate(.8 1.4)">${goldenSVG(w, h)}</g>`; // Schatten, steht ein Stück von der Wand ab
+    s += `<rect width="${w}" height="${h}" fill="transparent"/>`; // damit man auch zwischen den Linien greifen kann
+    s += goldenSVG(w, h);
   } else if (t.kind === 'mirror') {
     const r = w / 2;
     s += `<circle cx="${r + .5}" cy="${r + 1}" r="${r}" fill="#000" opacity=".2" filter="url(#sh)"/>`;
@@ -1341,7 +1368,7 @@ function autoSalon() {
   if (lastGen && lastGen.every(id => byId(id)) && lastGen.length === sel.size && lastGen.every(id => sel.has(id))) S.items = S.items.filter(i => !lastGen.includes(i.id));
   const pool = [];
   S.types.forEach(t => {
-    const isF = t.kind === 'frame';
+    const isF = t.kind === 'frame' || t.kind === 'golden';
     if (!isF && !(o.mix && ['record', 'plant', 'mirror', 'deck', 'shelf'].includes(t.kind))) return;
     if (isF && o.colors.size && !o.colors.has(norm(t.color))) return;
     if (isF && !o.large && t.w * t.h >= 2000) return;
@@ -1360,7 +1387,7 @@ function autoSalon() {
     for (const a of pairs) { if (chosen.length + 2 > o.n) break; take(a[0]); take(a[1]); if (a.length >= 4 && chosen.length + 2 <= o.n && Math.random() < .4) { take(a[2]); take(a[3]); } }
     pool.length = 0;
   }
-  if (o.large) pool.filter(t => t.kind === 'frame' && t.w * t.h >= 2000).slice(0, o.n >= 14 ? 2 : 1).forEach(take);
+  if (o.large) pool.filter(t => (t.kind === 'frame' || t.kind === 'golden') && t.w * t.h >= 2000).slice(0, o.n >= 14 ? 2 : 1).forEach(take);
   const lim = () => 2; // max. 2 gleiche Rahmen pro Vorschlag, für Abwechslung
   for (const t of pool) { if (chosen.length >= o.n) break; if ((per[t.id] || 0) >= lim(t)) continue; if (t.w * t.h >= 2000 && chosen.filter(c => c.w * c.h >= 2000).length >= 3) continue; take(t); }
   for (const t of pool) { if (chosen.length >= o.n) break; if (chosen.filter(c => c === t).length < remaining(t.id)) take(t); }
@@ -1383,6 +1410,7 @@ function thumb(t, size = 40) {
   const k = size / Math.max(t.w, t.h, 40), w = t.w * k, h = t.h * k;
   if (t.kind === 'tv') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="1.5" fill="#151515"/></svg>`;
   if (t.kind === 'record') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#d8452f"/><circle cx="${w * .55}" cy="${h * .5}" r="${w * .28}" fill="#232323"/></svg>`;
+  if (t.kind === 'golden') return `<svg width="${w}" height="${h}" viewBox="0 0 ${t.w} ${t.h}">${goldenSVG(t.w, t.h, 2.2)}</svg>`;
   if (t.kind === 'mirror') return `<svg width="${w}" height="${h}"><circle cx="${w / 2}" cy="${h / 2}" r="${w / 2}" fill="#161616"/><circle cx="${w / 2}" cy="${h / 2}" r="${w / 2 - 1.5}" fill="#c9d0d6"/></svg>`;
   if (t.kind === 'deck') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${w / 2}" fill="#d8b98c" stroke="rgba(0,0,0,.2)"/></svg>`;
   if (t.kind === 'shelf') return `<svg width="${w}" height="${h}"><path d="M1.5 ${h - 1} L1.5 ${h / 2} L${w - 1.5} ${h / 2} L${w - 1.5} 1" fill="none" stroke="#6f806f" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
@@ -1512,6 +1540,7 @@ function renderDrawer(it) {
     <div class="row"><label>Montage</label><button class="btn ${!it.rot ? 'primary' : ''}" data-act="${it.rot ? 'rot' : ''}">Horizontal 60×35</button><button class="btn ${it.rot ? 'primary' : ''}" data-act="${!it.rot ? 'rot' : ''}">Vertikal 35×60</button></div>
     <div class="row"><label>Form</label><button class="btn ${!it.flip ? 'primary' : ''}" data-act="${it.flip ? 'flip' : ''}">Z</button><button class="btn ${it.flip ? 'primary' : ''}" data-act="${!it.flip ? 'flip' : ''}">S (gespiegelt)</button></div>
     <p class="muted" style="margin:0;font-size:12px">Frontansicht: Gitterboden 60×20 cm, an den Enden je eine Platte nach unten bzw. oben. Vertikal wird daraus ein Steg mit kleinem Fach oben und unten, wie im IKEA-Raumbild. Max. 10 kg, Schrauben separat.</p></div>`;
+  if (t.kind === 'golden') h += `<div class="sec"><h3>Hinweis</h3><p class="muted" style="margin:0;font-size:12px">Metall-Wandkunst ohne Rückwand, die Wandfarbe scheint zwischen den Linien durch. Fix im Querformat.</p></div>`;
   if (t.kind === 'mirror') h += `<div class="sec"><h3>Hinweis</h3><p class="muted" style="margin:0;font-size:12px">Konvexer Spiegel, Ø 41 cm, 5 cm tief. Spiegelt je nach Position das Ambilight oder Fenster, abends kurz testen.</p></div>`;
   if (t.kind === 'plant') h += `<div class="sec"><h3>Topf</h3><div class="row"><label>Farbe</label>${POT_COLORS.map(([n, c]) => `<button class="sw ${it.pot === c ? 'on' : ''}" title="${n}" style="background:${c}" data-pot="${c}"></button>`).join('')}</div>
     <label class="tog"><input type="checkbox" data-k="green" ${it.green ? 'checked' : ''}> Pflanze anzeigen</label></div>`;
@@ -1712,6 +1741,7 @@ function printPlan() {
     if (t.kind === 'tv') hang = `Halterung Mitte: ${fmt(cx)} / ${fmt(h - r.y - r.h / 2)}`;
     else if (t.kind === 'record') hang = `Halter-Unterkante: ${fmt(cx)} / ${fmt(h - r.y - r.h)}`;
     else if (t.kind === 'plant') hang = `Ring: ${fmt(cx)} / ${fmt(h - r.y - r.h * 0.55)}`;
+    else if (t.kind === 'golden') hang = `2 Punkte Oberkante ca.: ${fmt(r.x + r.w * .2)} und ${fmt(r.x + r.w * .8)} / ${fmt(h - r.y - 1.5)} (Aufhänger prüfen)`;
     else if (t.kind === 'mirror') hang = `Aufhängung: ${fmt(cx)} / ${fmt(h - r.y - 3)} (nachmessen)`;
     else if (t.kind === 'deck') hang = `2 Halter: ${fmt(cx)} / ${fmt(h - r.y - Math.min(12, r.h * .2))} und ${fmt(h - r.y - r.h + Math.min(12, r.h * .2))}`;
     else if (t.kind === 'shelf') {
@@ -1756,7 +1786,7 @@ $('#importFile').onchange = e => {
     try {
       const d = JSON.parse(txt); if (d.app !== 'wandplaner' || !Array.isArray(d.items)) throw 0;
       pushHistory(); S = Object.assign(freshState(), d);
-      DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); // neue Objekte auch in alten Plänen
+      syncTypes();
       sel.clear(); syncHeader(); fit(); renderAll(); dirty = false; needsSave = true; toast('Plan geladen');
     } catch (err) { toast('Das ist keine Wandplaner-Datei'); }
     e.target.value = '';

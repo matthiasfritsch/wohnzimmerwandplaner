@@ -29,7 +29,8 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 ### Inventar (aus Google Sheet des Nutzers, im Code als `DEFAULT_TYPES`)
 
 - 52 Rahmen in 27 Größen. Sheet-Logik: `iw/ih` = Bildmaß (sichtbarer Ausschnitt), `w/h` = Außenmaß. Kleinere Zahl = Breite, also default hochkant.
-- Fixe Motive: Moosbild (43×53 Holz), Golden Ratio (43,5×69 schwarz), Fisch (21×27 gold), Fisch (18,5×22 grün), Rahmen mit Löchern (25×30 weiß, Form `holes`), Ovaler Rahmen (22×28 weiß, Form `oval`), "Yuna Portrait" (33×33 schwarz).
+- Golden Ratio: kein Rahmen, sondern Metall-Wandkunst (`kind:'golden'`, id `t18`), 69 × 43,5 fix quer, nicht drehbar. Gezeichnet von `goldenSVG()` (Fibonacci-Spirale im exakten Goldenen Rechteck, leicht auf Maß gestreckt). Zählt in der Auto-Komposition wie Kunst. `syncTypes()` zieht alte Pläne um.
+- Fixe Motive: Moosbild (43×53 Holz), Fisch (21×27 gold), Fisch (18,5×22 grün), Rahmen mit Löchern (25×30 weiß, Form `holes`), Ovaler Rahmen (22×28 weiß, Form `oval`), "Yuna Portrait" (33×33 schwarz).
 - 5 Schallplatten 31,5 × 31,5 mit 3D-gedrucktem Halter
 - 6 Pflanzenringe 15 × 15 (Topf im Ring, Blätter ragen ca. 18 cm nach oben, zählen nicht zur Fläche, werden aber beim Packing als Luft reserviert)
 - IKEA SVARTBJÖRK Spiegel, rund Ø 41 cm, konvex, schwarz (1×)
@@ -68,7 +69,7 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 ## Code-Landkarte (index.html)
 
 - Daten/Zustand: `DEFAULT_TYPES`, `freshState()`, globales `S` (wall, gap, tvGap, sb, types, items, set, variants), `ui` (Tabs, Auto-Einstellungen), `sel` (Auswahl).
-- Geometrie: `dims()`, `rectOf()`, `bboxOf()`, `gapPair()` (TV-Abstand), `isTV()`.
+- Geometrie: `dims()` (Drehung nur wenn `canRotate`), `rectOf()`, `bboxOf()`, `gapPair()` (TV-Abstand), `isTV()`.
 - Rendering: `renderStatic` (Wand, Lineale, Hilfslinien), `renderSB`, `renderItems/renderItem/itemMarkup` (pro Objektart), `motif()`, `renderOverlay/renderHalo/renderGuides`.
 - Interaktion: Pointer-Handler auf dem SVG, `snapBox()`, Keyboard-Handler, Drop-Handler.
 - Layout-Engine: `pack()` (relativ), `packAroundTV()` (echte Wandkoordinaten, TV fix), `symmetricTV()`, `lineTV()`, `gridLayout/rowLayout/colLayout`, `applyLayout(pos, place, settle)`, `layoutGroup()`, `attachItems()` (anbauen), globale `CHAOS` für Zufall.
