@@ -5,6 +5,7 @@ Kontext für Claude Code. Entstanden in einer Cowork-Session, wird hier weiteren
 ## Wer & wie
 
 - Nutzer: Matthias, Product Design Lead (Design System, DesignOps). Versteht Code, ist aber kein Dev. Code-Änderungen kurz und für Designer verständlich erklären.
+- Entschieden: kein Passwortschutz (statische Seite, Daten liegen eh nur lokal), "Yuna Portrait" bleibt so.
 - Sprache: Deutsch, du-Form, knapp, gern mit etwas Humor. Keine Gedankenstriche als Satzzeichen.
 - Arbeitsweise: Bei größeren Features erst kurz den Ansatz vorschlagen, bei kleinen Fixes direkt umsetzen. Nach jeder Änderung testen (siehe unten), committen und **direkt nach `main` pushen** (vom Nutzer freigegeben), damit GitHub Pages sich aktualisiert.
 
@@ -84,4 +85,3 @@ Chromium + Playwright (Python) headless. In der Cloud-Umgebung: `pip install pla
 - Steckdosen, Schalter, Fenster als Hindernisse (bewusst zurückgestellt)
 - Beim Entfernen aus "Meine Auswahl" bleibt eine Lücke; ob die automatisch geschlossen werden soll, ist noch offen
 - SVENSHULT und Spiegel: echte Aufhängepunkte gegen Montageanleitung prüfen
-- "Yuna Portrait" steht öffentlich im Code; ggf. neutral umbenennen, falls gewünscht
