@@ -44,6 +44,7 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 
 ### Interaktion
 
+- Ansicht verschieben: Leertaste halten + ziehen (wie Figma) oder mittlere Maustaste. Scrollt `#stage`, geht also nur, wenn reingezoomt ist. Capture-Listener auf `#stage` fangen den Klick vor dem SVG ab.
 - Drag & Drop aus Inventar oder +, Mehrfachauswahl (Shift-Klick, Rahmen aufziehen), Pfeiltasten 1/5 cm, R drehen, Entf, Strg+D, Strg+Z/Y, Strg+A.
 - Snapping: nur zu Objekten in max. 45 cm Nähe (sonst klebt man fest), Schwelle 5 px, Kanten/Mitten bündig, exakter Abstand zu Nachbarn (am TV Ambilight-Abstand), Wandmitte, Augenhöhe 150 / sitzend ~110. Alt = aus.
 - Maßketten bei Auswahl (Abstand links, ab Boden, Größe).

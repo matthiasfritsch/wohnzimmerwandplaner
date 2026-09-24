@@ -85,6 +85,8 @@ aside{background:var(--panel);overflow:auto;min-height:0}
 .summary b{color:var(--ink);font-weight:600}
 
 #stage{position:relative;overflow:auto;min-width:0;min-height:0}
+#stage.panmode,#stage.panmode *{cursor:grab!important}
+#stage.panning,#stage.panning *{cursor:grabbing!important}
 #svgwrap{padding:22px;display:flex;justify-content:center;align-items:flex-start;min-width:max-content}
 #wall{display:block;touch-action:none;user-select:none}
 #L-overlay,#L-guides,#L-halo{pointer-events:none}
@@ -203,7 +205,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:6px}
         <button class="cb-btn" id="zin" title="Vergrößern">+</button>
       </div>
     </div>
-    <p id="hint">Ziehen aus dem Inventar oder + klicken · Shift-Klick bzw. Rahmen aufziehen: Mehrfachauswahl · Alt beim Ziehen: ohne Snapping · R drehen · Pfeile 1 cm (Shift 5 cm) · Entf löschen · Strg+D duplizieren · Bild direkt auf einen Rahmen ziehen setzt das Motiv</p>
+    <p id="hint">Ziehen aus dem Inventar oder + klicken · Shift-Klick bzw. Rahmen aufziehen: Mehrfachauswahl · Alt beim Ziehen: ohne Snapping · R drehen · Pfeile 1 cm (Shift 5 cm) · Entf löschen · Strg+D duplizieren · Leertaste + Ziehen: Ansicht verschieben · Bild direkt auf einen Rahmen ziehen setzt das Motiv</p>
   </main>
 
   <aside id="right"></aside>
@@ -804,6 +806,32 @@ document.addEventListener('keydown', e => {
   const st = e.shiftKey ? 5 : 1, mv = { ArrowLeft:[-st, 0], ArrowRight:[st, 0], ArrowUp:[0, -st], ArrowDown:[0, st] }[e.key];
   if (mv) { e.preventDefault(); pushHistory('nudge'); its.forEach(it => { if (!it.locked) { it.x = q(it.x + mv[0]); it.y = q(it.y + mv[1]); placeG(it); } }); renderOverlay(); renderPanelSoft(); }
 });
+
+/* Ansicht verschieben wie in Figma: Leertaste halten + ziehen, oder mittlere Maustaste */
+const pst = $('#stage');
+let spaceDown = false, pan = null;
+const typing = () => /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+function setPanMode(on) { spaceDown = on; pst.classList.toggle('panmode', on); }
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || typing()) return;
+  e.preventDefault(); // sonst scrollt die Seite oder ein fokussierter Button wird geklickt
+  if (!e.repeat) setPanMode(true);
+});
+document.addEventListener('keyup', e => { if (e.code === 'Space' && spaceDown) { e.preventDefault(); setPanMode(false); } });
+window.addEventListener('blur', () => { setPanMode(false); pan = null; pst.classList.remove('panning'); });
+pst.addEventListener('pointerdown', e => {
+  if (!(spaceDown && e.button === 0) && e.button !== 1) return;
+  e.preventDefault(); e.stopPropagation(); // Objekte bleiben liegen, keine Auswahl
+  pan = { id:e.pointerId, x:e.clientX, y:e.clientY, sl:pst.scrollLeft, st:pst.scrollTop };
+  pst.setPointerCapture(e.pointerId); pst.classList.add('panning');
+}, true);
+pst.addEventListener('pointermove', e => {
+  if (!pan || e.pointerId !== pan.id) return;
+  pst.scrollLeft = pan.sl - (e.clientX - pan.x); pst.scrollTop = pan.st - (e.clientY - pan.y);
+}, true);
+const endPan = e => { if (pan && e.pointerId === pan.id) { pan = null; pst.classList.remove('panning'); e.stopPropagation(); } };
+pst.addEventListener('pointerup', endPan, true); pst.addEventListener('pointercancel', endPan, true);
+pst.addEventListener('auxclick', e => { if (e.button === 1) e.preventDefault(); });
 
 /* Drop aus dem Inventar oder Bilddatei auf einen Rahmen */
 const stage = $('#stage');
