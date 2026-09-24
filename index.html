@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wandplaner</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{
+  --bg:#f3f1ed; --panel:#fbfaf8; --ink:#1d1c1a; --muted:#77726a; --line:#e4e0d9; --soft:#efece6;
+  --accent:#2d5bd3; --accent-soft:#e6ecfb; --danger:#cf3b2b; --warn:#c98a12; --ok:#2f7d4f; --gapc:#c2337a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{display:grid;grid-template-rows:54px 1fr;grid-template-columns:290px 1fr 330px;height:100vh}
+header{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);min-width:0}
+.brand{font-weight:650;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:-2px}
+.hgroup{display:flex;align-items:center;gap:6px;padding-left:14px;border-left:1px solid var(--line);white-space:nowrap}
+.hgroup label{color:var(--muted);font-size:12px}
+.num{width:58px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:#fff;text-align:right}
+.num.sm{width:48px}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#cfc9bf;background:#fdfcfa}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#34322e}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--soft)}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.icon{padding:6px 8px;min-width:32px}
+.tog{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.tog input{accent-color:var(--accent)}
+
+aside{background:var(--panel);overflow:auto;min-height:0}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+.sec{padding:14px 16px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sec h3 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:3px 9px 3px 6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;user-select:none}
+.chip.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15);flex:none}
+.inv-group{margin-top:12px}
+.inv-group h4{margin:0 0 6px;font-size:12px;font-weight:600}
+.inv{display:flex;align-items:center;gap:10px;padding:6px 6px;border-radius:9px;cursor:grab;user-select:none}
+.inv:hover{background:var(--soft)}
+.inv.empty{opacity:.45}
+.inv .th{width:40px;height:40px;display:flex;align-items:flex-end;justify-content:center;flex:none}
+.inv .meta{flex:1;min-width:0}
+.inv .t1{font-weight:550;font-size:12.5px}
+.inv .t2{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:11px;padding:1px 7px;border-radius:99px;background:var(--soft);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge.full{background:#e3f1e8;color:var(--ok)}
+.fixb{font-size:10px;padding:1px 6px;border-radius:99px;background:#f6ecd9;color:#8a5a0c;margin-left:4px}
+.add{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;flex:none}
+.add:hover{border-color:var(--ink)}
+.progress{height:6px;background:var(--soft);border-radius:9px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--ink)}
+.summary{font-size:12px;color:var(--muted)}
+.summary b{color:var(--ink);font-weight:600}
+
+#stage{position:relative;overflow:auto;min-width:0;min-height:0}
+#svgwrap{padding:22px;display:flex;justify-content:center;align-items:flex-start;min-width:max-content}
+#wall{display:block;touch-action:none;user-select:none}
+#L-overlay,#L-guides,#L-halo{pointer-events:none}
+#hint{position:sticky;left:0;bottom:0;margin:0;padding:7px 14px;font-size:11.5px;color:var(--muted);background:linear-gradient(transparent,var(--bg) 40%)}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.row label{min-width:92px;color:var(--muted);font-size:12px}
+.row .num{width:70px}
+.row input[type=range]{flex:1;accent-color:var(--ink)}
+.row select{padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:#fff;flex:1}
+.sw{width:24px;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0}
+.sw.on{outline:2px solid var(--accent);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tpl{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;text-align:left;cursor:pointer}
+.tpl:hover{border-color:#bdb6aa}
+.tpl:disabled{opacity:.4;cursor:default}
+.tpl b{display:block;font-weight:600;font-size:12.5px}
+.tpl span{font-size:11px;color:var(--muted)}
+.seg{display:flex;background:var(--soft);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:6px 8px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:550}
+.seg.sm button{padding:3px 7px;font-size:11.5px}
+.setrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--soft)}
+.setrow .th{width:28px;height:28px;display:flex;align-items:flex-end;justify-content:center;flex:none}
+.setrow .meta{flex:1;min-width:0;font-size:12px}
+.setrow .meta small{display:block;color:var(--muted);font-size:11px}
+.setbadge{font-size:10.5px;padding:1px 6px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.vchip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer}
+.vchip:hover{border-color:var(--ink)}
+.check{display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;font-size:12.5px}
+.check .dot{margin-top:4px;border:none}
+.check small{display:block;color:var(--muted);font-size:11.5px}
+.tips{margin:0;padding-left:16px;color:var(--muted);font-size:12px}
+.tips li{margin-bottom:4px}
+.drawer-head{display:flex;gap:10px;align-items:flex-start}
+.drawer-head .t{font-weight:650;font-size:15px}
+.drawer-head .s{color:var(--muted);font-size:12px}
+.drawer-head .x{margin-left:auto}
+.upload{display:flex;gap:6px;align-items:center}
+textarea{width:100%;min-height:56px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;resize:vertical;background:#fff}
+.muted{color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:8px 14px;border-radius:10px;font-size:12.5px;opacity:0;pointer-events:none;transition:.2s}
+#toast.show{opacity:1;transform:translateX(-50%)}
+details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:6px}
+#print{display:none}
+@media print{
+  html,body{background:#fff!important}
+  #app,#toast{display:none!important}
+  #print{display:block;font:11px/1.4 -apple-system,Helvetica,Arial,sans-serif;color:#000}
+  #print h1{font-size:18px;margin:0 0 4px}
+  #print table{width:100%;border-collapse:collapse;margin-top:12px}
+  #print th,#print td{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left;font-variant-numeric:tabular-nums}
+  #print th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+  #print svg{width:100%;height:auto;margin-top:10px}
+  @page{size:A4 landscape;margin:12mm}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">Wandplaner<small>Wohnzimmer</small></div>
+    <div class="hgroup">
+      <label>Wand</label>
+      <input class="num" id="wallW" type="number" min="100" step="1"> <span class="muted">×</span>
+      <input class="num" id="wallH" type="number" min="100" step="1"> <span class="muted">cm</span>
+      <input type="color" id="wallC" title="Wandfarbe" style="width:28px;height:26px;border:1px solid var(--line);border-radius:6px;padding:1px;background:#fff">
+    </div>
+    <div class="hgroup">
+      <label>Abstand</label><input class="num sm" id="gap" type="number" min="0" step="0.5"><span class="muted">cm</span>
+      <label style="margin-left:6px" title="Mindestabstand von Kunst zum TV, damit das Ambilight Platz hat">TV / Ambilight</label><input class="num sm" id="tvGap" type="number" min="0" step="1"><span class="muted">cm</span>
+    </div>
+    <div class="hgroup">
+      <label class="tog"><input type="checkbox" id="snap"> Snapping</label>
+      <label class="tog"><input type="checkbox" id="guides"> Hilfslinien</label>
+      <label class="tog"><input type="checkbox" id="person"> Person</label>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn icon ghost" id="undo" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn icon ghost" id="redo" title="Wiederholen (Strg+Shift+Z)">↷</button>
+    <div class="hgroup">
+      <button class="btn icon ghost" id="zout" title="Verkleinern">−</button>
+      <button class="btn ghost" id="zfit" title="Einpassen">Fit</button>
+      <button class="btn icon ghost" id="zin" title="Vergrößern">+</button>
+    </div>
+    <div class="hgroup">
+      <span id="saveState" class="muted" style="font-size:11.5px;margin-right:4px"></span>
+      <button class="btn ghost" id="newBtn" title="Leere Wand mit TV und Sideboard">Neu</button>
+      <button class="btn" id="importBtn">Import</button>
+      <button class="btn" id="exportBtn">Export</button>
+      <button class="btn primary" id="printBtn">Bohrplan</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <aside id="left"></aside>
+
+  <main id="stage">
+    <div id="svgwrap">
+      <svg id="wall" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0.7"/></filter>
+          <radialGradient id="mirr" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#f4f6f8"/><stop offset=".6" stop-color="#b9c1c8"/><stop offset="1" stop-color="#7d868e"/></radialGradient>
+          <linearGradient id="amb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".5" stop-color="#b86bff"/><stop offset="1" stop-color="#3da5ff"/></linearGradient>
+          <filter id="ambf" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+          <linearGradient id="tvg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#23262c"/><stop offset="1" stop-color="#121316"/></linearGradient>
+        </defs>
+        <g id="L-static"></g><g id="L-sb"></g><g id="L-halo"></g><g id="L-items"></g><g id="L-overlay"></g><g id="L-guides"></g>
+      </svg>
+    </div>
+    <p id="hint">Ziehen aus dem Inventar oder + klicken · Shift-Klick bzw. Rahmen aufziehen: Mehrfachauswahl · Alt beim Ziehen: ohne Snapping · R drehen · Pfeile 1 cm (Shift 5 cm) · Entf löschen · Strg+D duplizieren · Bild direkt auf einen Rahmen ziehen setzt das Motiv</p>
+  </main>
+
+  <aside id="right"></aside>
+</div>
+<div id="print"></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   WANDPLANER
+   Alles in cm. Die Wand ist ein SVG, dessen Koordinaten 1:1 Zentimeter
+   sind (x von links, y von oben). "Ab Boden" = Wandhöhe minus y.
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const q = v => Math.round(v * 4) / 4;                       // auf 0,25 cm runden
+const fmt = v => (Math.round(v * 10) / 10).toString().replace('.', ',');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Farben ---------- */
+const FRAME_COLORS = { Schwarz:'#1f1f1f', Weiss:'#f6f4f0', Holz:'#b98a5d', Gold:'#c9a44f', Silber:'#b9bec3', Orange:'#e2712b', 'Grün':'#47704f' };
+const LIGHT = new Set(['Weiss', 'Silber']);
+const PP_COLORS = [['Weiß','#fbfaf6'],['Naturweiß','#f1ead9'],['Grau','#cfccc6'],['Schwarz','#1d1d1d']];
+const POT_COLORS = [['Ton','#c7774f'],['Weiß','#ecebe7'],['Schwarz','#252525'],['Beige','#d9cbb4']];
+const TONES = ['#e9dccb','#d8e0d6','#e7d4cf','#d5dbe6','#efe5c6','#ddd6e8','#e3e0d8','#d2e2e0'];
+const INKS  = ['#b8573c','#2f5d8a','#d9a33a','#3e6b4f','#7a4ea0','#1f1f1f','#c86f8e','#5f7f9a'];
+const VINYL = ['#d8452f','#2f5d8a','#e8b83a','#232323','#7a4ea0','#3f8f7a','#e87aa0'];
+
+/* ---------- Bestand aus deinem Google Sheet ----------
+   iw/ih = Bildmaß (sichtbarer Ausschnitt), w/h = Außenmaß.
+   Kleinere Zahl = Breite, also erst mal alles hochkant. */
+function F(iw, ih, w, h, color, count, note = '', shape = 'rect') {
+  const fixed = /fix/i.test(note);
+  return { kind:'frame', iw, ih, w, h, color, count, note, fixed, shape, title: fixed ? note.split('/')[0].trim() : '' };
+}
+const DEFAULT_TYPES = [
+  F(20,30,21,31,'Silber',1), F(20,30,21,31,'Schwarz',1), F(21,29.7,24,33,'Holz',4), F(20,20,23,23,'Schwarz',12),
+  F(28,35,29,36,'Schwarz',2), F(18,24,24,30,'Weiss',1), F(24,30,30,36,'Weiss',1), F(30,40,35,45,'Schwarz',1),
+  F(30,45,35,50,'Orange',1), F(40,50,42,52,'Schwarz',2), F(43,53,43,53,'Holz',1,'Moosbild / Fixes Motiv'),
+  F(30,30,31,31,'Schwarz',1), F(10.5,15,14,19,'Gold',2), F(18,24,25,31,'Gold',1), F(13,18,17,22,'Gold',1),
+  F(13,18,18,23,'Gold',1), F(50,70,53.5,73.5,'Schwarz',1), F(43.5,69,43.5,69,'Schwarz',1,'Golden Ratio / Fixes Motiv'),
+  F(61,91,62.5,93,'Schwarz',1), F(61,91,62.5,93,'Weiss',1), F(18,24,21,27,'Gold',1,'Fisch / Fixes Motiv'),
+  F(13,18,21,27,'Schwarz',9), F(18.5,22,18.5,22,'Grün',1,'Fisch / Fixes Motiv'),
+  F(25,30,25,30,'Weiss',1,'Rahmen mit Löchern / Fixe Form','holes'), F(22,28,22,28,'Weiss',1,'Ovaler Rahmen / Fixe Form','oval'),
+  F(30,30,33,33,'Schwarz',1,'Yuna Portrait / Fixes Motiv'), F(20,30,21,31,'Weiss',1),
+].map((t, i) => ({ id: 't' + (i + 1), ...t }));
+DEFAULT_TYPES.push(
+  { id:'tv', kind:'tv', w:123, h:70, iw:123, ih:70, color:'Schwarz', count:1, note:'Wandmontage, Position noch offen', title:'TV' },
+  { id:'rec', kind:'record', w:31.5, h:31.5, iw:31.5, ih:31.5, color:'Bunt', count:5, note:'Mit 3D-gedrucktem Wandhalter', title:'Schallplatte' },
+  { id:'plant', kind:'plant', w:15, h:15, iw:15, ih:15, color:'Schwarz', count:6, note:'Pflanzenhalter-Ring mit Topf', title:'Pflanzenring' },
+  { id:'mirror', kind:'mirror', w:41, h:41, iw:41, ih:41, color:'Schwarz', count:1, note:'IKEA SVARTBJÖRK, konvex, Ø 41 cm, 5 cm tief', title:'Spiegel SVARTBJÖRK' },
+  { id:'deck', kind:'deck', w:20.5, h:81, iw:20.5, ih:81, color:'Holz', count:2, note:'Skateboard-Deck 8,0″ × 31,8″, Ahorn', title:'Skateboard-Deck' },
+  { id:'shelf', kind:'shelf', w:60, h:35, iw:60, ih:35, color:'Graugrün', count:1, note:'IKEA SVENSHULT 60×20×35 cm, Stahl, lackierbar', title:'Regal SVENSHULT' },
+);
+const SHELF_COLORS = [['Graugrün (Original)','#8a9a8c'],['Schwarz','#1f1f1f'],['Weiß','#f2f0ec'],['Signalrot','#d8392b'],['Kobaltblau','#2b5fb4'],['Senfgelb','#d9a531'],['Rosa','#e9a3b0'],['Chrom','#c3c7cb']];
+
+/* ---------- Zustand ---------- */
+let S = freshState();
+function freshState() {
+  const st = {
+    app:'wandplaner', v:1,
+    wall:{ w:600, h:350, color:'#eeebe5' },
+    gap:6, tvGap:20, snap:true, guides:true, person:false, hangOffset:3,
+    sb:{ x:80, w:230, h:53, d:40, color:'#2b5fb4', show:true },
+    types: DEFAULT_TYPES.map(t => ({ ...t })),
+    items: [],
+    set: [],       // Meine Auswahl: [{id, typeId, rot:'h'|'q'|'r', itemId}]
+    variants: [],  // gemerkte Varianten der Auswahl
+  };
+  // Startpunkt wie in deiner Skizze: TV mittig über dem Sideboard, 25 cm Luft
+  const tv = makeItem(st.types.find(t => t.id === 'tv'));
+  tv.x = st.sb.x + st.sb.w / 2 - 61.5; tv.y = st.wall.h - st.sb.h - 25 - 70;
+  st.items.push(tv);
+  return st;
+}
+let sel = new Set();
+let scale = 2;
+let undoStack = [], redoStack = [], lastKey = null, lastT = 0, dirty = false;
+let lastGen = null;
+
+/* ---------- Autosave im Browser (klappt, sobald die Seite unter einer festen Adresse läuft, z.B. GitHub Pages) ---------- */
+const LS_KEY = 'wandplaner-v1';
+let needsSave = false, autosaveOk = null;
+function saveLocal() {
+  needsSave = false;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); if (autosaveOk === false) toast('Autosave läuft wieder'); autosaveOk = true; }
+  catch (e) { if (autosaveOk !== false) toast('Autosave voll (vermutlich zu viele Bilder), bitte zusätzlich exportieren'); autosaveOk = false; }
+  const el = document.getElementById('saveState');
+  if (el) el.textContent = autosaveOk ? 'Automatisch gespeichert' : 'Nicht gespeichert, bitte exportieren';
+}
+function loadLocal() {
+  try { const raw = localStorage.getItem(LS_KEY); if (!raw) return false; const d = JSON.parse(raw); if (d.app !== 'wandplaner') return false;
+    S = Object.assign(freshState(), d); DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); return true;
+  } catch (e) { return false; }
+}
+setInterval(() => { if (needsSave && !drag) saveLocal(); }, 1500);
+document.addEventListener('visibilitychange', () => { if (document.hidden && needsSave) saveLocal(); });
+const ui = { tab:'suggest', autoAttach:true, anchor:'sideboard', colorFilter:null, onlyAvail:false,
+  auto:{ n:14, colors:new Set(), large:true, mix:false, aspect:1.5, mode:'aroundTV', chaos:0.3 }, gridCols:4, salonAspect:1.5 };
+
+const T = id => S.types.find(t => t.id === id);
+const byId = id => S.items.find(i => i.id === id);
+const used = id => S.items.filter(i => i.typeId === id).length;
+const W = () => S.wall.w, H = () => S.wall.h;
+const sbRect = () => ({ x:S.sb.x, y:H() - S.sb.h, w:S.sb.w, h:S.sb.h });
+
+const isTV = it => !!it && T(it.typeId) && T(it.typeId).kind === 'tv';
+const tvItem = () => S.items.find(isTV);
+/* Abstand zwischen zwei Objekten: am TV gilt der größere Ambilight-Abstand */
+const gapPair = (a, b) => (isTV(a) || isTV(b)) ? Math.max(S.tvGap, S.gap) : S.gap;
+function dims(it) { const t = T(it.typeId); return it.rot ? { w:t.h, h:t.w } : { w:t.w, h:t.h }; }
+function rectOf(it) { const d = dims(it); return { x:it.x, y:it.y, w:d.w, h:d.h }; }
+function bboxOf(rs) {
+  if (!rs.length) return null;
+  const x0 = Math.min(...rs.map(r => r.x)), y0 = Math.min(...rs.map(r => r.y));
+  const x1 = Math.max(...rs.map(r => r.x + r.w)), y1 = Math.max(...rs.map(r => r.y + r.h));
+  return { x:x0, y:y0, w:x1 - x0, h:y1 - y0 };
+}
+
+/* Neues Objekt mit sinnvollen Defaults (Leiste, Passepartout) */
+function makeItem(t) {
+  const it = { id:uid(), typeId:t.id, x:0, y:0, rot:false, note:'', locked:false };
+  if (t.kind === 'frame') {
+    const mx = (t.w - t.iw) / 2, my = (t.h - t.ih) / 2;
+    it.m = t.shape === 'holes' ? 3 : clamp(Math.min(mx, my), 0.5, 2);
+    if (t.w === t.iw && t.h === t.ih && t.shape !== 'holes') it.m = 1.5;
+    const ow = t.w - 2 * it.m, oh = t.h - 2 * it.m;
+    it.pp = !t.fixed && (ow - t.iw >= 1.5 || oh - t.ih >= 1.5);
+    it.cutW = t.iw; it.cutH = t.ih; it.ppColor = '#fbfaf6'; it.color = null;
+  }
+  if (t.kind === 'plant') { it.pot = '#c7774f'; it.green = true; }
+  if (t.kind === 'shelf') { it.shelfColor = '#8a9a8c'; it.rot = false; it.flip = false; }
+  if (t.kind === 'deck') it.grip = false;
+  it.img = null; it.imgW = 0; it.imgH = 0; it.zoom = 1; it.ox = 0; it.oy = 0;
+  return it;
+}
+function hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
+
+/* ---------- Undo ---------- */
+function snapshot() { return { items:S.items.map(o => ({ ...o })), sb:{ ...S.sb }, types:S.types.map(t => ({ ...t })), wall:{ ...S.wall }, set:S.set.map(e => ({ ...e })), variants:S.variants.slice() }; }
+function restore(s) { S.items = s.items; S.sb = s.sb; S.types = s.types; S.wall = s.wall; S.set = s.set || []; S.variants = s.variants || []; sel = new Set([...sel].filter(id => id === 'sb' || byId(id))); renderAll(); }
+function pushHistory(key) {
+  needsSave = true;
+  const now = Date.now();
+  if (key && key === lastKey && now - lastT < 1200) { lastT = now; return; }
+  lastKey = key; lastT = now;
+  undoStack.push(snapshot()); if (undoStack.length > 120) undoStack.shift();
+  redoStack = []; dirty = true; updateUndo();
+}
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); lastKey = null; updateUndo(); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); lastKey = null; updateUndo(); }
+function updateUndo() { $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length; }
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
+
+/* =====================================================================
+   RENDERING DER WAND
+   ===================================================================== */
+const svg = $('#wall');
+const M = 26; // Rand um die Wand in cm (für Lineale)
+
+function setSvgSize() {
+  svg.setAttribute('viewBox', `${-M} ${-M} ${W() + 2 * M} ${H() + M + 16}`);
+  svg.setAttribute('width', (W() + 2 * M) * scale);
+  svg.setAttribute('height', (H() + M + 16) * scale);
+}
+function fit() {
+  const st = $('#stage');
+  scale = Math.max(0.5, Math.min((st.clientWidth - 50) / (W() + 2 * M), (st.clientHeight - 80) / (H() + M + 16)));
+  setSvgSize(); renderStatic(); renderOverlay();
+}
+function zoom(f) { scale = clamp(scale * f, 0.4, 12); setSvgSize(); renderStatic(); renderOverlay(); }
+
+function renderStatic() {
+  const fs = 11 / scale, w = W(), h = H();
+  let s = `<rect x="${-M}" y="${h}" width="${w + 2 * M}" height="14" fill="#d8cdb9"/>`;
+  s += `<rect x="${-M}" y="${h}" width="${w + 2 * M}" height="1.2" fill="#c4b79e"/>`;
+  s += `<rect x="0" y="0" width="${w}" height="${h}" fill="${S.wall.color}"/>`;
+  s += `<rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#cfc8bb" stroke-width="${1 / scale}"/>`;
+  // Lineale
+  for (let x = 0; x <= w; x += 10) {
+    const big = x % 50 === 0;
+    s += `<line x1="${x}" y1="${big ? -5 : -2.5}" x2="${x}" y2="0" stroke="#aaa294" stroke-width="${1 / scale}"/>`;
+    if (big) s += `<text x="${x}" y="${-7}" font-size="${fs}" fill="#8b857a" text-anchor="middle">${x}</text>`;
+  }
+  for (let v = 0; v <= h; v += 10) {
+    const big = v % 50 === 0, y = h - v;
+    s += `<line x1="${big ? -5 : -2.5}" y1="${y}" x2="0" y2="${y}" stroke="#aaa294" stroke-width="${1 / scale}"/>`;
+    if (big) s += `<text x="${-7}" y="${y + fs * 0.35}" font-size="${fs}" fill="#8b857a" text-anchor="end">${v}</text>`;
+  }
+  if (S.guides) {
+    const ey = h - 150;
+    s += `<line x1="0" y1="${ey}" x2="${w}" y2="${ey}" stroke="#9c8f78" stroke-width="${1 / scale}" stroke-dasharray="${6 / scale} ${5 / scale}"/>`;
+    s += `<text x="${w - 2}" y="${ey - 4 / scale}" font-size="${fs}" fill="#9c8f78" text-anchor="end">Augenhöhe stehend 150</text>`;
+    const cy = h - 110;
+    s += `<line x1="0" y1="${cy}" x2="${w}" y2="${cy}" stroke="#b3a894" stroke-width="${1 / scale}" stroke-dasharray="${2 / scale} ${5 / scale}"/>`;
+    s += `<text x="${w - 2}" y="${cy - 4 / scale}" font-size="${fs}" fill="#b3a894" text-anchor="end">Augenhöhe sitzend ~110</text>`;
+    s += `<line x1="${w / 2}" y1="0" x2="${w / 2}" y2="${h}" stroke="#b3a894" stroke-width="${1 / scale}" stroke-dasharray="${2 / scale} ${5 / scale}" opacity=".6"/>`;
+  }
+  if (S.person) {
+    // Maßstabsfigur 175 cm
+    const px = 22, ph = 175, top = h - ph;
+    s += `<g fill="#3a3834" opacity=".16">
+      <circle cx="${px}" cy="${top + 11}" r="10.5"/>
+      <path d="M${px - 20} ${top + 30} q20 -10 40 0 l4 60 l-7 0 l-3 -40 l0 125 l-9 0 l-3 -72 l-3 72 l-9 0 l0 -125 l-3 40 l-7 0 z"/>
+    </g><text x="${px}" y="${top - 3}" font-size="${fs}" fill="#8b857a" text-anchor="middle">175</text>`;
+  }
+  $('#L-static').innerHTML = s;
+}
+
+/* Tylko Sideboard: Tür | 2 Fächer | 2 Schubladen | offen | offen | Tür */
+function renderSB() {
+  const b = S.sb, h = H();
+  if (!b.show) { $('#L-sb').innerHTML = ''; return; }
+  const plinth = 8, bh = b.h - plinth, edge = '#e9dcc3';
+  const lighter = shade(b.color, 0.08), darker = shade(b.color, -0.28);
+  let s = `<g data-id="sb" transform="translate(${b.x},${h - b.h})" style="cursor:ew-resize">`;
+  s += `<rect x="${b.w * 0.03}" y="${bh}" width="${b.w * 0.94}" height="1" fill="${darker}"/>`;
+  [0.08, 0.5, 0.92].forEach(f => s += `<rect x="${b.w * f - 1}" y="${bh}" width="2" height="${plinth}" fill="${darker}"/>`);
+  s += `<rect x="0" y="0" width="${b.w}" height="${bh}" fill="${b.color}"/>`;
+  const segs = [['door', .19], ['shelf', .2], ['drawers', .2], ['open', .13], ['open', .09], ['door', .19]];
+  let x = 0; const t = 1.8;
+  segs.forEach(([k, f]) => {
+    const sw = b.w * f;
+    if (k === 'door') s += `<rect x="${x + t}" y="${t}" width="${sw - 2 * t}" height="${bh - 2 * t}" fill="${lighter}"/><rect x="${k && x < b.w / 2 ? x + sw - 5 : x + 3}" y="${bh / 2 - 3}" width="1" height="6" fill="${darker}"/>`;
+    if (k === 'shelf') s += `<rect x="${x + t}" y="${t}" width="${sw - 2 * t}" height="${bh - 2 * t}" fill="${darker}" opacity=".55"/><rect x="${x}" y="${bh / 2 - .9}" width="${sw}" height="1.8" fill="${b.color}"/><line x1="${x}" y1="${bh / 2 - .9}" x2="${x + sw}" y2="${bh / 2 - .9}" stroke="${edge}" stroke-width=".4"/>`;
+    if (k === 'drawers') [0, 1].forEach(r => s += `<rect x="${x + t}" y="${t + r * (bh - t) / 2}" width="${sw - 2 * t}" height="${(bh - 3 * t) / 2}" fill="${lighter}"/>`);
+    if (k === 'open') s += `<rect x="${x + t}" y="${t}" width="${sw - 2 * t}" height="${bh - 2 * t}" fill="${darker}" opacity=".55"/>`;
+    if (x > 0) s += `<line x1="${x}" y1="0" x2="${x}" y2="${bh}" stroke="${edge}" stroke-width=".45"/>`;
+    x += sw;
+  });
+  s += `<rect x="0" y="0" width="${b.w}" height="${bh}" fill="none" stroke="${edge}" stroke-width=".5"/>`;
+  s += `<title>Tylko Sideboard ${b.w}×${b.h}×${b.d} cm</title></g>`;
+  $('#L-sb').innerHTML = s;
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const f = v => clamp(Math.round(amt > 0 ? v + (255 - v) * amt : v * (1 + amt)), 0, 255);
+  return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+/* Motiv: echtes Bild (Cover-Fit + Zoom + Verschieben) oder generativer Platzhalter */
+function motif(it, x, y, cw, ch, ellipse) {
+  const t = T(it.typeId), cid = 'c' + it.id;
+  const clip = ellipse ? `<ellipse cx="${x + cw / 2}" cy="${y + ch / 2}" rx="${cw / 2}" ry="${ch / 2}"/>` : `<rect x="${x}" y="${y}" width="${cw}" height="${ch}"/>`;
+  let s = `<clipPath id="${cid}">${clip}</clipPath><g clip-path="url(#${cid})">`;
+  if (it.img) {
+    const k = Math.max(cw / it.imgW, ch / it.imgH) * (it.zoom || 1);
+    const iw = it.imgW * k, ih = it.imgH * k;
+    const ix = x + (cw - iw) * (1 + (it.ox || 0)) / 2, iy = y + (ch - ih) * (1 + (it.oy || 0)) / 2;
+    s += `<image href="${it.img}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none"/>`;
+  } else if (t.kind === 'record') {
+    const hs = hash(it.id), bg = VINYL[hs % VINYL.length], fg = VINYL[(hs >> 3) % VINYL.length];
+    s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${bg}"/><circle cx="${x + cw * (0.3 + (hs % 40) / 100)}" cy="${y + ch * 0.55}" r="${cw * 0.26}" fill="${fg === bg ? '#f2efe8' : fg}" opacity=".9"/>`;
+  } else if (t.fixed) {
+    const tone = /moos/i.test(t.title) ? '#6f8a4e' : /fisch/i.test(t.title) ? '#9cc1cc' : /yuna/i.test(t.title) ? '#e6d2c3' : '#d9c9a3';
+    const f = Math.min(cw, ch) * 0.13;
+    s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${tone}"/>`;
+    if (/moos/i.test(t.title)) for (let i = 0; i < 40; i++) { const hh = hash(it.id + i); s += `<circle cx="${x + (hh % 100) / 100 * cw}" cy="${y + ((hh >> 7) % 100) / 100 * ch}" r="${1 + (hh % 3)}" fill="#55713b" opacity=".7"/>`; }
+    s += `<text x="${x + cw / 2}" y="${y + ch / 2 + f * 0.35}" font-size="${f}" text-anchor="middle" fill="rgba(0,0,0,.55)" font-style="italic">${esc(t.title)}</text>`;
+  } else {
+    const hs = hash(it.id), bg = TONES[hs % TONES.length], ink = INKS[(hs >> 4) % INKS.length];
+    const r = Math.min(cw, ch) * (0.18 + (hs % 12) / 100);
+    s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${bg}"/>`;
+    s += `<circle cx="${x + cw * (0.3 + (hs % 40) / 100)}" cy="${y + ch * (0.3 + ((hs >> 5) % 40) / 100)}" r="${r}" fill="${ink}" opacity=".75"/>`;
+    s += `<rect x="${x + cw * 0.15}" y="${y + ch * (0.62 + ((hs >> 9) % 15) / 100)}" width="${cw * (0.3 + (hs % 30) / 100)}" height="${ch * 0.08}" fill="${INKS[(hs >> 7) % INKS.length]}" opacity=".55"/>`;
+  }
+  return s + '</g>';
+}
+
+function itemMarkup(it) {
+  const t = T(it.typeId), { w, h } = dims(it);
+  let s = '';
+  if (t.kind === 'tv') {
+    s += `<rect x="0.6" y="1.2" width="${w}" height="${h}" fill="#000" opacity=".22" filter="url(#sh)"/>`;
+    s += `<rect width="${w}" height="${h}" rx=".8" fill="#0d0d0e"/><rect x="1" y="1" width="${w - 2}" height="${h - 3}" fill="url(#tvg)"/>`;
+    s += `<path d="M${w * 0.55} 1 L${w - 1} 1 L${w - 1} ${h * 0.45} Z" fill="#fff" opacity=".035"/>`;
+    s += `<text x="${w / 2}" y="${h / 2 + 2}" font-size="5" text-anchor="middle" fill="#4c4f57">TV 55″ · ${w}×${h}</text>`;
+  } else if (t.kind === 'record') {
+    s += `<rect x="0.5" y="1" width="${w}" height="${h}" fill="#000" opacity=".2" filter="url(#sh)"/>`;
+    s += motif(it, 0, 0, w, h);
+    s += `<rect width="${w}" height="${h}" fill="none" stroke="rgba(0,0,0,.25)" stroke-width=".25"/>`;
+    s += `<rect x="${w * 0.28}" y="${h - 1.2}" width="${w * 0.44}" height="2.4" rx=".5" fill="#1b1b1b"/>`;
+  } else if (t.kind === 'mirror') {
+    const r = w / 2;
+    s += `<circle cx="${r + .5}" cy="${r + 1}" r="${r}" fill="#000" opacity=".2" filter="url(#sh)"/>`;
+    s += `<circle cx="${r}" cy="${r}" r="${r}" fill="#161616"/><circle cx="${r}" cy="${r}" r="${r - 1.6}" fill="url(#mirr)"/>`;
+    s += `<ellipse cx="${r * .72}" cy="${r * .62}" rx="${r * .38}" ry="${r * .22}" fill="#fff" opacity=".35" transform="rotate(-35 ${r * .72} ${r * .62})"/>`;
+    s += `<circle cx="${r}" cy="${r}" r="${r - 1.6}" fill="none" stroke="rgba(255,255,255,.25)" stroke-width=".4"/>`;
+  } else if (t.kind === 'deck') {
+    // Deck mit runder Nose und Tail, Unterseite Holz oder Grafik, 8 Achsschrauben
+    const rr = Math.min(w, h) / 2, long = h >= w, cid = 'c' + it.id;
+    s += `<rect x=".5" y="1" width="${w}" height="${h}" rx="${rr}" fill="#000" opacity=".2" filter="url(#sh)"/>`;
+    s += `<clipPath id="${cid}"><rect width="${w}" height="${h}" rx="${rr}"/></clipPath><g clip-path="url(#${cid})">`;
+    if (it.img) { const k = Math.max(w / it.imgW, h / it.imgH) * (it.zoom || 1), iw = it.imgW * k, ih = it.imgH * k;
+      s += `<image href="${it.img}" x="${(w - iw) * (1 + (it.ox || 0)) / 2}" y="${(h - ih) * (1 + (it.oy || 0)) / 2}" width="${iw}" height="${ih}" preserveAspectRatio="none"/>`; }
+    else { s += `<rect width="${w}" height="${h}" fill="${it.grip ? '#1c1c1c' : '#d8b98c'}"/>`;
+      if (!it.grip) for (let k = 1; k < 9; k++) s += long ? `<path d="M${w * k / 9} 0 q ${(k % 2 ? 1.2 : -1.2)} ${h / 2} 0 ${h}" stroke="#c49f6d" stroke-width=".25" fill="none"/>` : `<path d="M0 ${h * k / 9} q ${w / 2} ${(k % 2 ? 1.2 : -1.2)} ${w} 0" stroke="#c49f6d" stroke-width=".25" fill="none"/>`; }
+    s += `</g><rect width="${w}" height="${h}" rx="${rr}" fill="none" stroke="rgba(0,0,0,.25)" stroke-width=".25"/>`;
+    const L = Math.max(w, h), S2 = Math.min(w, h);
+    [17, L - 17 - 5.5].forEach(a => [[0, 0], [5.5, 0], [0, 4.2], [5.5, 4.2]].forEach(([da, db]) => {
+      const pa = a + da, pb = S2 / 2 - 2.1 + db;
+      s += `<circle cx="${long ? pb : pa}" cy="${long ? pa : pb}" r=".45" fill="#555"/>`; }));
+  } else if (t.kind === 'shelf') {
+    // SVENSHULT in echter Z/S-Form: Gitterboden in der Mitte, links Platte nach unten,
+    // rechts Platte nach oben. Gezeichnet liegend (60×35), gedreht = vertikal (35×60).
+    const c = it.shelfColor || '#8a9a8c', dk = shade(c, -0.25);
+    const band = (x, y, bw, bh, vert) => {
+      let g = `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx=".8" fill="${c}" fill-opacity=".16" stroke="${c}" stroke-width=".7"/>`;
+      if (vert) for (let yy = y + 2.2; yy < y + bh - .5; yy += 2.2) g += `<line x1="${x}" y1="${yy}" x2="${x + bw}" y2="${yy}" stroke="${c}" stroke-width=".3"/>`;
+      else for (let xx = x + 2.2; xx < x + bw - .5; xx += 2.2) g += `<line x1="${xx}" y1="${y}" x2="${xx}" y2="${y + bh}" stroke="${c}" stroke-width=".3"/>`;
+      return g;
+    };
+    let z = '';
+    z += `<path d="M1.5 34 L1.5 19 Q1.5 17 3.5 17 L56.5 17 Q58.5 17 58.5 15 L58.5 1" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="2.4" filter="url(#sh)" transform="translate(.6 1)"/>`;
+    z += band(0, 17.5, 3, 17.5, true);                     // Platte links, nach unten
+    z += band(57, 0, 3, 17.5, true);                       // Platte rechts, nach oben
+    z += band(1.5, 15.2, 57, 3.3, false);                  // Gitterboden (leicht von oben)
+    z += `<path d="M1.5 34.2 L1.5 20.5 Q1.5 18.5 3.5 18.5 L56.5 18.5 Q58.5 18.5 58.5 16.5 L58.5 .8" fill="none" stroke="${dk}" stroke-width="1"/>`; // Vorderkante Draht
+    const tf = [];
+    if (it.flip) tf.push(`translate(${w},0) scale(-1,1)`);
+    if (it.rot) tf.push(`translate(${it.flip ? 0 : w},0) rotate(90)`.replace('translate(0,0) ', ''));
+    s += it.rot && it.flip ? `<g transform="translate(${w},0) scale(-1,1)"><g transform="translate(${w},0) rotate(90)">${z}</g></g>`
+       : it.rot ? `<g transform="translate(${w},0) rotate(90)">${z}</g>`
+       : it.flip ? `<g transform="translate(${w},0) scale(-1,1)">${z}</g>` : z;
+  } else if (t.kind === 'plant') {
+    // Topf im Ring, Blätter ragen nach oben (zählen nicht zur Fläche)
+    if (it.green) {
+      const g = ['#4f7d4a', '#6a9a5c', '#3d6a3f'];
+      [[-35, 7, -8, 11], [25, 8, -9, 12], [-5, 7.5, -13, 13], [55, 4, -3, 9], [-70, 2.5, -2, 9]].forEach(([a, cx, cy, rl], i) =>
+        s += `<ellipse cx="${cx}" cy="${cy}" rx="${rl / 3}" ry="${rl / 1.3}" fill="${g[i % 3]}" transform="rotate(${a} ${cx} ${cy + rl / 1.5})"/>`);
+    }
+    s += `<path d="M0.4 3 L14.6 3 L12.6 15 L2.4 15 Z" fill="${it.pot}"/><rect x="0" y="2.2" width="15" height="1.6" fill="${shade(it.pot, -0.12)}"/>`;
+    s += `<ellipse cx="7.5" cy="8.5" rx="7.4" ry="1.2" fill="none" stroke="#161616" stroke-width=".8"/>`;
+  } else {
+    const fcName = it.color || t.color, fc = FRAME_COLORS[fcName] || FRAME_COLORS.Schwarz, light = LIGHT.has(fcName);
+    const m = it.m, ow = w - 2 * m, oh = h - 2 * m, stroke = light ? `stroke="#cbc5ba" stroke-width=".2"` : '';
+    if (t.shape === 'oval') {
+      s += `<ellipse cx="${w / 2 + .5}" cy="${h / 2 + 1}" rx="${w / 2}" ry="${h / 2}" fill="#000" opacity=".16" filter="url(#sh)"/>`;
+      s += `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${fc}" ${stroke}/>`;
+      s += motif(it, m, m, ow, oh, true);
+      s += `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${ow / 2}" ry="${oh / 2}" fill="none" stroke="rgba(0,0,0,.25)" stroke-width=".3"/>`;
+    } else {
+      s += `<rect x="0.5" y="0.9" width="${w}" height="${h}" fill="#000" opacity=".16" filter="url(#sh)"/>`;
+      s += `<rect width="${w}" height="${h}" fill="${fc}" ${stroke}/>`;
+      if (it.pp) {
+        s += `<rect x="${m}" y="${m}" width="${ow}" height="${oh}" fill="${it.ppColor}"/>`;
+        const cw = Math.min(it.rot ? it.cutH : it.cutW, ow), ch = Math.min(it.rot ? it.cutW : it.cutH, oh);
+        const cx = (w - cw) / 2, cy = (h - ch) / 2;
+        s += motif(it, cx, cy, cw, ch);
+        s += `<rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" fill="none" stroke="rgba(0,0,0,.2)" stroke-width=".25"/>`;
+      } else s += motif(it, m, m, ow, oh);
+      s += `<rect x="${m}" y="${m}" width="${ow}" height="${oh}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".3"/>`;
+      if (t.shape === 'holes') {
+        for (let xx = 2.5; xx < w - 1; xx += 5) [1.5, h - 1.5].forEach(yy => s += `<circle cx="${xx}" cy="${yy}" r=".7" fill="${S.wall.color}"/>`);
+        for (let yy = 7.5; yy < h - 4; yy += 5) [1.5, w - 1.5].forEach(xx => s += `<circle cx="${xx}" cy="${yy}" r=".7" fill="${S.wall.color}"/>`);
+      }
+    }
+  }
+  s += `<title>${esc(label(t, it))}</title>`;
+  return s;
+}
+function label(t, it) {
+  const d = it ? dims(it) : { w:t.w, h:t.h };
+  if (t.kind === 'frame') return `${t.title ? t.title + ' · ' : ''}${fmt(d.w)}×${fmt(d.h)} ${t.color}`;
+  return `${t.title} ${fmt(d.w)}×${fmt(d.h)}`;
+}
+
+function renderItems() {
+  const L = $('#L-items'); L.innerHTML = '';
+  // TV hinten, Pflanzen vorne (Blätter dürfen überlappen)
+  const order = [...S.items].sort((a, b) => rank(a) - rank(b));
+  order.forEach(it => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.dataset.id = it.id; g.style.cursor = it.locked ? 'default' : 'move';
+    L.appendChild(g); renderItem(it);
+  });
+}
+const rank = it => ({ tv:0, shelf:1, frame:2, mirror:2, deck:2, record:3, plant:4 })[T(it.typeId).kind] ?? 2;
+function renderItem(it) {
+  const g = svg.querySelector(`#L-items [data-id="${it.id}"]`); if (!g) return;
+  g.innerHTML = itemMarkup(it); placeG(it);
+}
+function placeG(it) { const g = svg.querySelector(`#L-items [data-id="${it.id}"]`); if (g) g.setAttribute('transform', `translate(${it.x},${it.y})`); }
+
+/* ---------- Checks: Überlappung, außerhalb, zu enge Abstände ---------- */
+function issues() {
+  const rs = S.items.map(i => ({ i, ...rectOf(i) })), bad = new Set();
+  let ov = 0, out = 0, tight = 0, tvTight = 0;
+  const sb = sbRect(), g = S.gap;
+  const inter = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.2 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.2;
+  rs.forEach(a => {
+    if (a.x < -0.01 || a.y < -0.01 || a.x + a.w > W() + 0.01 || a.y + a.h > H() + 0.01) { bad.add(a.i.id); out++; }
+    if (S.sb.show && inter(a, sb)) { bad.add(a.i.id); ov++; }
+  });
+  for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+    const a = rs[i], b = rs[j];
+    if (inter(a, b)) { bad.add(a.i.id); bad.add(b.i.id); ov++; continue; }
+    const yo = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y), xo = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const dx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w)), dy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+    const need = gapPair(a.i, b.i), tvp = isTV(a.i) || isTV(b.i);
+    // am TV zählt auch die Diagonale (Lichtkegel des Ambilights)
+    const near = tvp ? (Math.max(dx, dy) >= 0 && Math.max(dx, dy) < need - 0.6)
+                     : ((yo > 0 && dx >= 0 && dx < need - 0.6) || (xo > 0 && dy >= 0 && dy < need - 0.6));
+    if (near) { if (tvp) { tvTight++; bad.add(a.i.id); bad.add(b.i.id); } else tight++; }
+  }
+  return { bad, ov, out, tight, tvTight };
+}
+
+function renderHalo() {
+  const tv = tvItem(), L = $('#L-halo');
+  if (!tv) { L.innerHTML = ''; return; }
+  const r = rectOf(tv), g = S.tvGap;
+  L.innerHTML = `<rect x="${r.x - g * .55}" y="${r.y - g * .55}" width="${r.w + g * 1.1}" height="${r.h + g * 1.1}" rx="${g * .6}" fill="url(#amb)" opacity=".30" filter="url(#ambf)"/>`
+    + (S.guides ? `<rect x="${r.x - g}" y="${r.y - g}" width="${r.w + 2 * g}" height="${r.h + 2 * g}" rx="${Math.min(g, 12)}" fill="none" stroke="#a07be0" stroke-width="${1 / scale}" stroke-dasharray="${4 / scale} ${4 / scale}" opacity=".7"/>` : '');
+}
+function renderOverlay() {
+  renderHalo();
+  const L = $('#L-overlay'), sw = 1.5 / scale, fs = 11 / scale;
+  const { bad } = issues();
+  let s = '';
+  bad.forEach(id => { const it = byId(id); if (!it) return; const r = rectOf(it);
+    s += `<rect x="${r.x - sw}" y="${r.y - sw}" width="${r.w + 2 * sw}" height="${r.h + 2 * sw}" fill="none" stroke="var(--danger)" stroke-width="${sw}" stroke-dasharray="${4 / scale} ${3 / scale}"/>`; });
+  const selIts = [...sel].map(byId).filter(Boolean);
+  selIts.forEach(it => { const r = rectOf(it);
+    s += `<rect x="${r.x - 2 * sw}" y="${r.y - 2 * sw}" width="${r.w + 4 * sw}" height="${r.h + 4 * sw}" fill="none" stroke="var(--accent)" stroke-width="${sw}"/>`; });
+  if (sel.has('sb')) { const r = sbRect(); s += `<rect x="${r.x - 2 * sw}" y="${r.y - 2 * sw}" width="${r.w + 4 * sw}" height="${r.h + 2 * sw}" fill="none" stroke="var(--accent)" stroke-width="${sw}"/>`; }
+  // Maßketten: bei Einzelauswahl Abstand zur linken Wand und zum Boden
+  const tag = (x, y, txt, anchor = 'middle') => {
+    const tw = txt.length * fs * 0.58 + fs * 0.8;
+    const bx = anchor === 'middle' ? x - tw / 2 : anchor === 'start' ? x : x - tw;
+    return `<rect x="${bx}" y="${y - fs * 0.95}" width="${tw}" height="${fs * 1.35}" rx="${3 / scale}" fill="var(--accent)"/><text x="${bx + tw / 2}" y="${y}" font-size="${fs}" fill="#fff" text-anchor="middle">${txt}</text>`;
+  };
+  let box = null;
+  if (selIts.length === 1) box = rectOf(selIts[0]);
+  else if (selIts.length > 1) { box = bboxOf(selIts.map(rectOf)); s += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="none" stroke="var(--accent)" stroke-width="${sw * .7}" stroke-dasharray="${2 / scale} ${3 / scale}"/>`; }
+  if (box) {
+    const cy = box.y + box.h / 2, cx = box.x + box.w / 2, bottom = H() - (box.y + box.h);
+    s += `<line x1="0" y1="${cy}" x2="${box.x}" y2="${cy}" stroke="var(--accent)" stroke-width="${sw * .7}" stroke-dasharray="${3 / scale} ${3 / scale}"/>`;
+    s += `<line x1="${cx}" y1="${box.y + box.h}" x2="${cx}" y2="${H()}" stroke="var(--accent)" stroke-width="${sw * .7}" stroke-dasharray="${3 / scale} ${3 / scale}"/>`;
+    if (box.x > 12) s += tag(box.x / 2, cy - 3 / scale, fmt(box.x));
+    if (bottom > 12) s += tag(cx, box.y + box.h + bottom / 2 + fs * .4, fmt(bottom) + ' ab Boden');
+    s += tag(cx, box.y - 6 / scale, `${fmt(box.w)} × ${fmt(box.h)}`);
+  }
+  L.innerHTML = s;
+}
+function renderGuides(gs) {
+  const sw = 1 / scale;
+  $('#L-guides').innerHTML = (gs || []).map(g => g.axis === 'x'
+    ? `<line x1="${g.v}" y1="${-4}" x2="${g.v}" y2="${H() + 4}" stroke="${g.gap ? 'var(--gapc)' : 'var(--accent)'}" stroke-width="${sw}"/>`
+    : `<line x1="${-4}" y1="${g.v}" x2="${W() + 4}" y2="${g.v}" stroke="${g.gap ? 'var(--gapc)' : 'var(--accent)'}" stroke-width="${sw}"/>`).join('');
+}
+
+/* =====================================================================
+   SNAPPING: Kanten bündig, Mitte bündig, exakt "Abstand" zu Nachbarn,
+   Wandmitte, Augenhöhe, Sideboard.
+   ===================================================================== */
+function snapBox(bb, excl) {
+  const thr = 5 / scale, g0 = S.gap;
+  const hasTV = [...excl].some(id => isTV(byId(id)));
+  // nur Objekte in der Nähe (max. 45 cm Luft) liefern Snap-Linien, sonst klebt man überall fest
+  const near = o => Math.hypot(Math.max(o.x - (bb.x + bb.w), bb.x - (o.x + o.w), 0), Math.max(o.y - (bb.y + bb.h), bb.y - (o.y + o.h), 0)) < 45;
+  const others = S.items.filter(i => !excl.has(i.id)).map(i => ({ ...rectOf(i), tv:isTV(i) })).filter(near);
+  if (S.sb.show && near(sbRect())) others.push({ ...sbRect(), sb:true });
+  const xs = [], ys = [];
+  const yOver = o => Math.min(o.y + o.h, bb.y + bb.h) - Math.max(o.y, bb.y) > -g0 * 2;
+  const xOver = o => Math.min(o.x + o.w, bb.x + bb.w) - Math.max(o.x, bb.x) > -g0 * 2;
+  others.forEach(o => {
+    const g = (o.tv || hasTV) ? Math.max(S.tvGap, S.gap) : S.gap;
+    xs.push([o.x, 'l'], [o.x + o.w, 'r'], [o.x + o.w / 2, 'c']);
+    if (yOver(o)) xs.push([o.x + o.w + g, 'l', 1], [o.x - g, 'r', 1]);
+    if (!o.sb) ys.push([o.y, 't'], [o.y + o.h, 'b'], [o.y + o.h / 2, 'c']);
+    if (xOver(o)) ys.push([o.y + o.h + g, 't', 1], [o.y - g, 'b', 1]);
+  });
+  xs.push([0, 'l'], [W(), 'r'], [W() / 2, 'c']);
+  ys.push([0, 't'], [H(), 'b'], [H() - 150, 'c'], [H() - 110, 'c']);
+  const ex = { l:bb.x, r:bb.x + bb.w, c:bb.x + bb.w / 2 }, ey = { t:bb.y, b:bb.y + bb.h, c:bb.y + bb.h / 2 };
+  let bx = null, by = null;
+  xs.forEach(([v, k, gp]) => { const d = v - ex[k]; if (Math.abs(d) < thr && (!bx || Math.abs(d) < Math.abs(bx.d))) bx = { d, v, gap:gp }; });
+  ys.forEach(([v, k, gp]) => { const d = v - ey[k]; if (Math.abs(d) < thr && (!by || Math.abs(d) < Math.abs(by.d))) by = { d, v, gap:gp }; });
+  const guides = [];
+  if (bx) guides.push({ axis:'x', v:bx.v, gap:bx.gap });
+  if (by) guides.push({ axis:'y', v:by.v, gap:by.gap });
+  return { dx:bx ? bx.d : 0, dy:by ? by.d : 0, guides };
+}
+
+/* =====================================================================
+   INTERAKTION AUF DER WAND
+   ===================================================================== */
+function pt(e) { const m = svg.getScreenCTM().inverse(); const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m); return { x:p.x, y:p.y }; }
+let drag = null;
+svg.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const p = pt(e), g = e.target.closest('[data-id]'), multi = e.shiftKey || e.metaKey || e.ctrlKey;
+  if (g && g.dataset.id === 'sb') {
+    sel = new Set(['sb']); drag = { kind:'sb', start:p, x0:S.sb.x, moved:false };
+  } else if (g) {
+    const id = g.dataset.id;
+    if (multi) { sel.delete('sb'); sel.has(id) ? sel.delete(id) : sel.add(id); }
+    else if (!sel.has(id)) sel = new Set([id]);
+    const ids = [...sel].filter(i => i !== 'sb' && byId(i) && !byId(i).locked);
+    drag = { kind:'items', start:p, ids, orig:ids.map(i => { const it = byId(i); return { it, x:it.x, y:it.y }; }), moved:false, clicked:id, multi };
+  } else {
+    if (!multi) sel.clear();
+    drag = { kind:'band', start:p, base:new Set(sel), moved:false };
+  }
+  svg.setPointerCapture(e.pointerId);
+  renderOverlay(); renderPanel();
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const p = pt(e); let dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+  if (!drag.moved && Math.hypot(dx, dy) * scale < 3) return;
+  if (!drag.moved) { drag.moved = true; if (drag.kind !== 'band') pushHistory(); }
+  if (drag.kind === 'items') {
+    if (!drag.orig.length) return;
+    const bb = bboxOf(drag.orig.map(o => ({ ...dims(o.it), x:o.x + dx, y:o.y + dy })));
+    let guides = [];
+    if (S.snap && !e.altKey) { const s = snapBox(bb, new Set(drag.ids)); dx += s.dx; dy += s.dy; guides = s.guides; }
+    drag.orig.forEach(o => { o.it.x = q(o.x + dx); o.it.y = q(o.y + dy); placeG(o.it); });
+    renderGuides(guides); renderOverlay();
+  } else if (drag.kind === 'sb') {
+    let x = drag.x0 + dx;
+    if (S.snap && !e.altKey) { const c = x + S.sb.w / 2; if (Math.abs(c - W() / 2) < 8 / scale) x = W() / 2 - S.sb.w / 2; if (Math.abs(x) < 8 / scale) x = 0; if (Math.abs(x + S.sb.w - W()) < 8 / scale) x = W() - S.sb.w; }
+    S.sb.x = q(clamp(x, 0, W() - S.sb.w)); renderSB(); renderOverlay();
+  } else {
+    const r = { x:Math.min(p.x, drag.start.x), y:Math.min(p.y, drag.start.y), w:Math.abs(dx), h:Math.abs(dy) };
+    sel = new Set(drag.base);
+    S.items.forEach(it => { const a = rectOf(it); if (a.x < r.x + r.w && a.x + a.w > r.x && a.y < r.y + r.h && a.y + a.h > r.y) sel.add(it.id); });
+    renderOverlay();
+    $('#L-guides').innerHTML = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(45,91,211,.08)" stroke="var(--accent)" stroke-width="${1 / scale}"/>`;
+  }
+});
+svg.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const d = drag; drag = null; renderGuides([]);
+  // Klick ohne Ziehen auf ein Element einer Mehrfachauswahl: nur dieses wählen
+  if (d.kind === 'items' && !d.moved && !d.multi && sel.size > 1) sel = new Set([d.clicked]);
+  renderOverlay(); renderPanel(); if (d.moved) { renderLeft(); needsSave = true; }
+});
+
+/* Tastatur */
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); sel = new Set(S.items.map(i => i.id)); renderOverlay(); renderPanel(); return; }
+  if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSel(); return; }
+  const its = [...sel].map(byId).filter(Boolean);
+  if (e.key === 'Escape') { sel.clear(); renderOverlay(); renderPanel(); return; }
+  if (!its.length) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSel(); return; }
+  if (e.key.toLowerCase() === 'r' && !mod) { rotateSel(); return; }
+  const st = e.shiftKey ? 5 : 1, mv = { ArrowLeft:[-st, 0], ArrowRight:[st, 0], ArrowUp:[0, -st], ArrowDown:[0, st] }[e.key];
+  if (mv) { e.preventDefault(); pushHistory('nudge'); its.forEach(it => { if (!it.locked) { it.x = q(it.x + mv[0]); it.y = q(it.y + mv[1]); placeG(it); } }); renderOverlay(); renderPanelSoft(); }
+});
+
+/* Drop aus dem Inventar oder Bilddatei auf einen Rahmen */
+const stage = $('#stage');
+stage.addEventListener('dragover', e => e.preventDefault());
+stage.addEventListener('drop', e => {
+  e.preventDefault();
+  const p = pt(e);
+  if (e.dataTransfer.files && e.dataTransfer.files.length) {
+    const el = document.elementFromPoint(e.clientX, e.clientY), g = el && el.closest('[data-id]');
+    const it = g && byId(g.dataset.id);
+    if (!it || !['frame', 'record', 'deck'].includes(T(it.typeId).kind)) { toast('Bild auf einen Rahmen, eine Platte oder ein Deck ziehen'); return; }
+    loadImage(e.dataTransfer.files[0], it); return;
+  }
+  const tid = e.dataTransfer.getData('text/plain').replace('type:', '');
+  if (T(tid)) addType(tid, p);
+});
+
+/* =====================================================================
+   AKTIONEN
+   ===================================================================== */
+function remaining(tid) { return T(tid).count - used(tid); }
+function addType(tid, at) {
+  const t = T(tid);
+  if (remaining(tid) <= 0) { toast(`Alle ${t.count} ${t.kind === 'frame' ? 'Rahmen dieser Größe' : t.title} sind schon platziert`); return null; }
+  pushHistory();
+  const it = makeItem(t); const d = dims(it);
+  if (at) { it.x = q(at.x - d.w / 2); it.y = q(at.y - d.h / 2); }
+  else { const f = findFree(d.w, d.h); it.x = f.x; it.y = f.y; }
+  S.items.push(it); sel = new Set([it.id]);
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+  return it;
+}
+/* Freien Platz suchen, bevorzugt nahe Augenhöhe und Wandmitte */
+function findFree(w, h) {
+  const rs = S.items.map(i => ({ ...rectOf(i), g:isTV(i) ? Math.max(S.tvGap, S.gap) : S.gap })); if (S.sb.show) rs.push({ ...sbRect(), g:S.gap });
+  const free = (x, y) => !rs.some(r => x < r.x + r.w + r.g && x + w > r.x - r.g && y < r.y + r.h + r.g && y + h > r.y - r.g);
+  let best = null;
+  for (let y = 5; y + h <= H() - 5; y += 2.5) for (let x = 5; x + w <= W() - 5; x += 2.5) {
+    if (!free(x, y)) continue;
+    const d = Math.hypot(x + w / 2 - W() / 2, (y + h / 2 - (H() - 150)) * 1.4);
+    if (!best || d < best.d) best = { x, y, d };
+  }
+  return best || { x:W() / 2 - w / 2, y:H() - 150 - h / 2 };
+}
+function removeSel() {
+  const ids = [...sel].filter(byId); if (!ids.length) return;
+  pushHistory(); S.items = S.items.filter(i => !sel.has(i.id)); sel.clear();
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+}
+function rotateSel() {
+  const its = [...sel].map(byId).filter(it => it && canRotate(T(it.typeId)) && !it.locked); if (!its.length) return;
+  pushHistory();
+  its.forEach(it => { const d0 = dims(it); it.rot = !it.rot; const d1 = dims(it); it.x = q(it.x + (d0.w - d1.w) / 2); it.y = q(it.y + (d0.h - d1.h) / 2); renderItem(it); });
+  renderOverlay(); renderPanel();
+}
+function duplicateSel() {
+  const its = [...sel].map(byId).filter(Boolean); if (!its.length) return;
+  pushHistory(); const nsel = new Set(); let skipped = 0;
+  its.forEach(it => {
+    if (remaining(it.typeId) <= 0) { skipped++; return; }
+    const c = { ...it, id:uid(), x:it.x + 8, y:it.y + 8, img:null, imgW:0, imgH:0 };
+    S.items.push(c); nsel.add(c.id);
+  });
+  if (nsel.size) sel = nsel;
+  if (skipped) toast(`${skipped}× nicht dupliziert, Bestand aufgebraucht`);
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+}
+
+/* Bild laden und auf max. 800 px verkleinern (hält die JSON-Datei klein) */
+function loadImage(file, it) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 800 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      pushHistory();
+      it.img = c.toDataURL('image/jpeg', 0.86); it.imgW = c.width; it.imgH = c.height; it.zoom = 1; it.ox = 0; it.oy = 0;
+      renderItem(it); renderPanel();
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+/* =====================================================================
+   KOMPOSITION: Anordnen, Vorlagen, Auto-Salon
+   ===================================================================== */
+
+/* Salon-Packing: größtes Stück in die Mitte, jedes weitere an eine Kante
+   eines bereits gesetzten Stücks (bündig oder mittig), immer mit exakt
+   "Abstand" dazwischen. Gewählt wird die Position, die die Gesamtform
+   am kompaktesten und nahe am Zielformat hält. */
+let CHAOS = 0; // 0 = ordentlich, 1 = wild; nur für Vorschläge
+// Pflanzen bekommen 18 cm Luft nach oben für die Blätter
+const sortByArea = list => list.map(o => { const pad = T(o.it.typeId).kind === 'plant' && o.it.green !== false ? 18 : 0;
+  return { o, w:o.d.w, h:o.d.h + pad, pad, k:o.d.w * o.d.h * (1 + CHAOS * Math.random() * 1.8) }; }).sort((a, b) => b.k - a.k);
+function pack(list, g, aspect) {
+  const gp = (a, b) => (isTV(a.o.it) || isTV(b.o.it)) ? Math.max(S.tvGap, g) : g;
+  const arr = sortByArea(list);
+  const placed = [];
+  let bb = null;
+  arr.forEach((a, i) => {
+    if (!i) { a.x = -a.w / 2; a.y = -a.h / 2; placed.push(a); bb = { x0:a.x, y0:a.y, x1:a.x + a.w, y1:a.y + a.h }; return; }
+    let best = null;
+    const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
+    for (const p of placed) {
+      const cands = [];
+      const g1 = gp(p, a);
+      [p.y, p.y + p.h - a.h, p.y + (p.h - a.h) / 2].forEach(y => cands.push([p.x + p.w + g1, y], [p.x - g1 - a.w, y]));
+      [p.x, p.x + p.w - a.w, p.x + (p.w - a.w) / 2].forEach(x => cands.push([x, p.y + p.h + g1], [x, p.y - g1 - a.h]));
+      if (CHAOS > 0) for (let k = 0; k < 2; k++) {   // versetzte, nicht bündige Positionen
+        const ry = p.y - a.h * 0.6 + Math.random() * (p.h + a.h * 0.2), rx = p.x - a.w * 0.6 + Math.random() * (p.w + a.w * 0.2);
+        cands.push([p.x + p.w + g1, ry], [p.x - g1 - a.w, ry], [rx, p.y + p.h + g1], [rx, p.y - g1 - a.h]);
+      }
+      for (const [x, y] of cands) {
+        if (placed.some(r => { const gg = gp(r, a); return x < r.x + r.w + gg - 0.01 && x + a.w > r.x - gg + 0.01 && y < r.y + r.h + gg - 0.01 && y + a.h > r.y - gg + 0.01; })) continue;
+        const X0 = Math.min(bb.x0, x), Y0 = Math.min(bb.y0, y), X1 = Math.max(bb.x1, x + a.w), Y1 = Math.max(bb.y1, y + a.h);
+        const Wn = X1 - X0, Hn = Y1 - Y0;
+        const score = Math.max(Wn, Hn * aspect) * 3 + (Wn + Hn * aspect) + Math.hypot(x + a.w / 2 - cx, (y + a.h / 2 - cy) * aspect) * 0.35 + CHAOS * Math.random() * 110;
+        if (!best || score < best.score) best = { x, y, score };
+      }
+    }
+    a.x = best.x; a.y = best.y; placed.push(a);
+    bb = { x0:Math.min(bb.x0, a.x), y0:Math.min(bb.y0, a.y), x1:Math.max(bb.x1, a.x + a.w), y1:Math.max(bb.y1, a.y + a.h) };
+  });
+  return placed.map(a => ({ o:a.o, x:a.x, y:a.y + a.pad }));
+}
+/* Packing in echten Wandkoordinaten mit festem TV in der Mitte.
+   Hindernisse (Sideboard, schon hängende Stücke) und Wandränder werden
+   respektiert, nichts rutscht tiefer als 15 cm über das Sideboard. */
+function packAroundTV(list, aspect, extraObstacles = []) {
+  const tv = tvItem(), tr = rectOf(tv);
+  const placed = [{ ...tr, tv:true }];
+  const obst = extraObstacles.slice();
+  const sb = sbRect();
+  const bnd = { x0:5, y0:5, x1:W() - 5, y1:S.sb.show ? sb.y - 15 : H() - 30 };
+  const cx = tr.x + tr.w / 2, cy = tr.y + tr.h / 2;
+  const arr = sortByArea(list);
+  let bb = { x0:tr.x, y0:tr.y, x1:tr.x + tr.w, y1:tr.y + tr.h };
+  const tvG = Math.max(S.tvGap, S.gap), g = S.gap;
+  arr.forEach(a => {
+    let best = null;
+    for (const p of placed) {
+      const g1 = p.tv ? tvG : g, cands = [];
+      [p.y, p.y + p.h - a.h, p.y + (p.h - a.h) / 2].forEach(y => cands.push([p.x + p.w + g1, y], [p.x - g1 - a.w, y]));
+      [p.x, p.x + p.w - a.w, p.x + (p.w - a.w) / 2].forEach(x => cands.push([x, p.y + p.h + g1], [x, p.y - g1 - a.h]));
+      if (CHAOS > 0) for (let k = 0; k < 2; k++) {   // versetzte, nicht bündige Positionen
+        const ry = p.y - a.h * 0.6 + Math.random() * (p.h + a.h * 0.2), rx = p.x - a.w * 0.6 + Math.random() * (p.w + a.w * 0.2);
+        cands.push([p.x + p.w + g1, ry], [p.x - g1 - a.w, ry], [rx, p.y + p.h + g1], [rx, p.y - g1 - a.h]);
+      }
+      for (const [x, y] of cands) {
+        if (x < bnd.x0 || y < bnd.y0 || x + a.w > bnd.x1 || y + a.h > bnd.y1) continue;
+        if (placed.some(r => { const gg = r.tv ? tvG : g; return x < r.x + r.w + gg - 0.01 && x + a.w > r.x - gg + 0.01 && y < r.y + r.h + gg - 0.01 && y + a.h > r.y - gg + 0.01; })) continue;
+        if (obst.some(r => x < r.x + r.w + g && x + a.w > r.x - g && y < r.y + r.h + g && y + a.h > r.y - g)) continue;
+        const X0 = Math.min(bb.x0, x), Y0 = Math.min(bb.y0, y), X1 = Math.max(bb.x1, x + a.w), Y1 = Math.max(bb.y1, y + a.h);
+        const Wn = X1 - X0, Hn = Y1 - Y0;
+        // Balance: Schwerpunkt der Gruppe soll über der TV-Mitte bleiben
+        const sym = Math.abs((X0 + X1) / 2 - cx);
+        const score = Math.max(Wn, Hn * aspect) * 3 + (Wn + Hn * aspect) + sym * (2 - CHAOS * 1.5) + Math.hypot(x + a.w / 2 - cx, (y + a.h / 2 - cy) * aspect) * 0.35 + CHAOS * Math.random() * 110;
+        if (!best || score < best.score) best = { x, y, score };
+      }
+    }
+    if (!best) return;                       // passt nicht mehr an die Wand
+    a.x = best.x; a.y = best.y; placed.push(a);
+    bb = { x0:Math.min(bb.x0, a.x), y0:Math.min(bb.y0, a.y), x1:Math.max(bb.x1, a.x + a.w), y1:Math.max(bb.y1, a.y + a.h) };
+  });
+  return arr.filter(a => a.x !== undefined).map(a => ({ o:a.o, x:a.x, y:a.y + a.pad }));
+}
+function gridLayout(list, cols, g) {
+  const n = list.length, rows = Math.ceil(n / cols), cw = Array(cols).fill(0), rh = Array(rows).fill(0);
+  list.forEach((o, i) => { cw[i % cols] = Math.max(cw[i % cols], o.d.w); rh[Math.floor(i / cols)] = Math.max(rh[Math.floor(i / cols)], o.d.h); });
+  return list.map((o, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    const x = cw.slice(0, c).reduce((a, b) => a + b + g, 0), y = rh.slice(0, r).reduce((a, b) => a + b + g, 0);
+    return { o, x:x + (cw[c] - o.d.w) / 2, y:y + (rh[r] - o.d.h) / 2 };
+  });
+}
+function rowLayout(list, g, align) {
+  let x = 0;
+  return list.map((o, k) => { const r = { o, x, y:align === 't' ? 0 : align === 'b' ? -o.d.h : -o.d.h / 2 };
+    const nx = list[k + 1]; x += o.d.w + (nx && (isTV(o.it) || isTV(nx.it)) ? Math.max(S.tvGap, g) : g); return r; });
+}
+function colLayout(list, g) { let y = 0; return list.map(o => { const r = { o, x:-o.d.w / 2, y }; y += o.d.h + g; return r; }); }
+
+/* Ergebnis eines Layouts an einer Stelle absetzen */
+function applyLayout(pos, place, settle) {
+  const bb = bboxOf(pos.map(p => ({ x:p.x, y:p.y, ...p.o.d })));
+  let tl = place(bb);
+  if (settle) {                                // Kollision mit Bestehendem? Dann nächsten freien Platz suchen
+    const mine = new Set(pos.map(p => p.o.it.id));
+    const rs = S.items.filter(i => !mine.has(i.id)).map(i => ({ ...rectOf(i), tv:isTV(i) }));
+    if (S.sb.show) rs.push(sbRect());
+    const hit = (x, y) => rs.some(r => { const g = r.tv ? Math.max(S.tvGap, S.gap) : S.gap; return x < r.x + r.w + g && x + bb.w > r.x - g && y < r.y + r.h + g && y + bb.h > r.y - g; })
+      || x < 5 || y < 5 || x + bb.w > W() - 5 || y + bb.h > H() - 5;
+    if (hit(tl.x, tl.y)) {
+      let best = null;
+      for (let y = 5; y + bb.h <= H() - 5; y += 5) for (let x = 5; x + bb.w <= W() - 5; x += 5) {
+        if (hit(x, y)) continue; const d = Math.hypot(x - tl.x, y - tl.y); if (!best || d < best.d) best = { x, y, d };
+      }
+      if (best) tl = best; else toast('Kein freier Platz in dieser Größe, bitte selbst verschieben');
+    }
+  }
+  pos.forEach(p => { p.o.it.x = q(tl.x + p.x - bb.x); p.o.it.y = q(tl.y + p.y - bb.y); });
+}
+const readingOrder = its => [...its].sort((a, b) => (Math.round((a.y + dims(a).h / 2) / 15) - Math.round((b.y + dims(b).h / 2) / 15)) || (a.x - b.x));
+
+function arrange(kind) {
+  CHAOS = 0;
+  const its = [...sel].map(byId).filter(it => it && !it.locked); if (its.length < 2) return;
+  pushHistory();
+  const bb0 = bboxOf(its.map(rectOf)), cx = bb0.x + bb0.w / 2, cy = bb0.y + bb0.h / 2, g = S.gap;
+  const L = its.map(it => ({ it, d:dims(it) }));
+  const around = bb => ({ x:cx - bb.w / 2, y:cy - bb.h / 2 });
+  if (kind === 'salon') {
+    const tv = its.find(isTV);
+    if (tv) {                                 // TV bleibt stehen, der Rest ordnet sich drumherum
+      const rest = L.filter(o => !isTV(o.it));
+      const others = S.items.filter(i => !sel.has(i.id)).map(rectOf);
+      const pos = packAroundTV(rest, ui.salonAspect, others);
+      pos.forEach(p => { p.o.it.x = q(p.x); p.o.it.y = q(p.y); });
+      if (pos.length < rest.length) toast(`${rest.length - pos.length} Stück passen nicht mehr um den TV`);
+    } else applyLayout(pack(L, g, ui.salonAspect), around);
+  }
+  if (kind === 'grid') applyLayout(gridLayout(readingOrder(its).map(it => ({ it, d:dims(it) })), ui.gridCols, g), around);
+  if (kind === 'rowC' || kind === 'rowT' || kind === 'rowB') applyLayout(rowLayout([...L].sort((a, b) => a.it.x - b.it.x), g, kind[3].toLowerCase()), around);
+  if (kind === 'col') applyLayout(colLayout([...L].sort((a, b) => a.it.y - b.it.y), g), around);
+  if (kind === 'distH' || kind === 'distV') {
+    const hz = kind === 'distH', s = [...L].sort((a, b) => hz ? a.it.x - b.it.x : a.it.y - b.it.y);
+    const total = s.reduce((a, o) => a + (hz ? o.d.w : o.d.h), 0), span = hz ? bb0.w : bb0.h, gg = (span - total) / (s.length - 1);
+    let p = hz ? bb0.x : bb0.y; s.forEach(o => { if (hz) o.it.x = q(p); else o.it.y = q(p); p += (hz ? o.d.w : o.d.h) + gg; });
+  }
+  S.items.forEach(placeG); renderOverlay(); renderPanel();
+}
+function moveGroup(mode) {
+  const its = [...sel].map(byId).filter(it => it && !it.locked); if (!its.length) return;
+  pushHistory();
+  const bb = bboxOf(its.map(rectOf)); let dx = 0, dy = 0;
+  if (mode === 'sbCenter') dx = S.sb.x + S.sb.w / 2 - (bb.x + bb.w / 2);
+  if (mode === 'wallCenter') dx = W() / 2 - (bb.x + bb.w / 2);
+  if (mode === 'eye') dy = (H() - 150) - (bb.y + bb.h / 2);
+  if (mode === 'aboveSb') dy = (H() - S.sb.h - 25) - (bb.y + bb.h);
+  its.forEach(it => { it.x = q(it.x + dx); it.y = q(it.y + dy); placeG(it); });
+  renderOverlay(); renderPanel();
+}
+
+/* Wo landen neue Vorlagen / Vorschläge? */
+function anchorPlace(bb) {
+  const tv = tvItem(), tg = Math.max(S.tvGap, S.gap);
+  switch (ui.anchor) {
+    case 'aboveTV': if (tv) { const r = rectOf(tv); return { x:r.x + r.w / 2 - bb.w / 2, y:Math.max(5, r.y - tg - bb.h) }; } break;
+    case 'sideboard': return { x:S.sb.x + S.sb.w / 2 - bb.w / 2, y:Math.max(5, H() - S.sb.h - 25 - bb.h) };
+    case 'rightTV': if (tv) { const r = rectOf(tv); return { x:r.x + r.w + tg, y:r.y + r.h - bb.h }; } break;
+    case 'leftTV': if (tv) { const r = rectOf(tv); return { x:r.x - tg - bb.w, y:r.y + r.h - bb.h }; } break;
+    case 'free': { const f = findFree(bb.w, bb.h); return f; }
+  }
+  return { x:W() / 2 - bb.w / 2, y:(H() - 150) - bb.h / 2 };
+}
+
+const TEMPLATES = [
+  { label:'Raster 4×3', sub:'12× Schwarz 23×23', parts:[['t4', 12]], layout:'grid', cols:4 },
+  { label:'Raster 3×3', sub:'9× Schwarz 21×27', parts:[['t22', 9]], layout:'grid', cols:3 },
+  { label:'Raster 2×2', sub:'4× Holz 24×33', parts:[['t3', 4]], layout:'grid', cols:2 },
+  { label:'Duo groß', sub:'62,5×93 Schwarz + Weiß', parts:[['t19', 1], ['t20', 1]], layout:'row' },
+  { label:'Platten-Reihe', sub:'5 Schallplatten', parts:[['rec', 5]], layout:'row' },
+  { label:'Platten-Kreuz', sub:'5 Platten versetzt', parts:[['rec', 5]], layout:'cross' },
+  { label:'Pflanzen-Reihe', sub:'6 Ringe, weiter Abstand', parts:[['plant', 6]], layout:'row', gapMul:4 },
+  { label:'Pflanzen-Treppe', sub:'4 Ringe diagonal', parts:[['plant', 4]], layout:'stair' },
+];
+function tplAvail(tp) { return tp.parts.every(([tid, n]) => remaining(tid) >= n); }
+function insertTemplate(i) {
+  const tp = TEMPLATES[i]; if (!tplAvail(tp)) { toast('Dafür ist nicht mehr genug im Bestand'); return; }
+  pushHistory();
+  const L = []; tp.parts.forEach(([tid, n]) => { for (let k = 0; k < n; k++) { const it = makeItem(T(tid)); S.items.push(it); L.push({ it, d:dims(it) }); } });
+  const g = S.gap * (tp.gapMul || 1); let pos;
+  if (tp.layout === 'grid') pos = gridLayout(L, tp.cols, g);
+  else if (tp.layout === 'row') pos = rowLayout(L, g, 'c');
+  else if (tp.layout === 'cross') { const s = L[0].d.w + g; pos = [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]].map(([c, r], k) => ({ o:L[k], x:c * s, y:r * s })); }
+  else if (tp.layout === 'stair') pos = L.map((o, k) => ({ o, x:k * 26, y:-k * 32 }));
+  applyLayout(pos, anchorPlace, true);
+  sel = new Set(L.map(o => o.it.id));
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+}
+
+/* Symmetrisch neben dem TV: links eine kleine Salon-Gruppe, rechts deren
+   Spiegelbild aus identischen Formaten. Ungerade Reste gehen mittig über den TV. */
+function symmetricTV(L) {
+  const tv = tvItem(), r = rectOf(tv), tg = Math.max(S.tvGap, S.gap), cx = r.x + r.w / 2;
+  const key = o => `${o.d.w}x${o.d.h}`, groups = {};
+  L.forEach(o => (groups[key(o)] = groups[key(o)] || []).push(o));
+  const left = [], right = [], single = [];
+  Object.values(groups).forEach(gs => { while (gs.length >= 2) { left.push(gs.pop()); right.push(gs.pop()); } single.push(...gs); });
+  // Paare aus dem freien Bestand nachziehen, damit wirklich gespiegelt werden kann
+  if (!left.length) return L.length ? (applyLayout(pack(L, S.gap, 2.2), bb => ({ x:cx - bb.w / 2, y:r.y - tg - bb.h })), L) : [];
+  const floor = S.sb.show ? sbRect().y - 15 : H() - 30;
+  let pl, bbL;
+  // so lange das größte Paar zurücklegen, bis beide Seiten an die Wand passen
+  for (;;) {
+    pl = pack(left, S.gap, 0.8); bbL = bboxOf(pl.map(p => ({ x:p.x, y:p.y, ...p.o.d })));
+    const fits = r.x - tg - bbL.w >= 5 && r.x + r.w + tg + bbL.w <= W() - 5 && bbL.h <= floor - 5;
+    if (fits || left.length <= 1) break;
+    const big = left.reduce((a, b) => a.d.w * a.d.h >= b.d.w * b.d.h ? a : b), k = left.indexOf(big);
+    left.splice(k, 1); right.splice(k, 1);
+  }
+  let top = r.y + r.h / 2 - bbL.h / 2; top = clamp(top, 5, floor - bbL.h);
+  const xRight = r.x - tg;                     // rechte Kante der linken Gruppe
+  pl.forEach((p, k) => {
+    const lx = xRight - bbL.w + (p.x - bbL.x), y = top + (p.y - bbL.y);
+    p.o.it.x = q(lx); p.o.it.y = q(y);
+    const m = right[left.indexOf(p.o)];        // Spiegelpartner
+    m.it.x = q(2 * cx - lx - m.d.w); m.it.y = q(y);
+  });
+  let out = [...left, ...right];
+  if (single.length) {
+    const ps = pack(single, S.gap, 3); applyLayout(ps, bb => ({ x:cx - bb.w / 2, y:r.y - tg - bb.h })); out.push(...single);
+  }
+  if (r.x - tg - bbL.w < 5 || r.x + r.w + tg + bbL.w > W() - 5) toast('Neben dem TV ist zu wenig Platz, TV oder Sideboard Richtung Wandmitte schieben');
+  return out;
+}
+
+/* Mittelachse: alle Stücke links und rechts vom TV, Mitten auf der TV-Mittellinie */
+function lineTV(L) {
+  const tv = tvItem(), r = rectOf(tv), tg = Math.max(S.tvGap, S.gap), cy = r.y + r.h / 2, g = S.gap;
+  const sides = [[], []]; let wl = 0, wr = 0;
+  [...L].sort(() => Math.random() - .5).forEach(o => { if (wl <= wr) { sides[0].push(o); wl += o.d.w + g; } else { sides[1].push(o); wr += o.d.w + g; } });
+  const out = [];
+  let x = r.x - tg; sides[0].forEach(o => { x -= o.d.w; if (x < 5) return; o.it.x = q(x); o.it.y = q(cy - o.d.h / 2); out.push(o); x -= g; });
+  x = r.x + r.w + tg; sides[1].forEach(o => { if (x + o.d.w > W() - 5) return; o.it.x = q(x); o.it.y = q(cy - o.d.h / 2); out.push(o); x += o.d.w + g; });
+  return out;
+}
+
+/* Legt eine Gruppe nach Bezug aus. Gibt zurück, was einen Platz bekommen hat. */
+function layoutGroup(L, mode, aspect, others) {
+  const tv = tvItem(); if (!tv) mode = 'free';
+  if (mode === 'aroundTV') {
+    const pos = packAroundTV(L, aspect, others);
+    pos.forEach(p => { p.o.it.x = q(p.x); p.o.it.y = q(p.y); });
+    return pos.map(p => p.o);
+  }
+  if (mode === 'symTV') return symmetricTV(L);
+  if (mode === 'lineTV') return lineTV(L);
+  if (mode === 'aboveTV') {
+    const r = rectOf(tv), tg = Math.max(S.tvGap, S.gap), availH = r.y - tg - 8;
+    const targetW = Math.max(r.w + 60, S.sb.show ? S.sb.w : 0);
+    applyLayout(pack(L, S.gap, Math.max(2.2, targetW / Math.max(availH, 30))), bb => ({ x:r.x + r.w / 2 - bb.w / 2, y:r.y - tg - bb.h }));
+    return L;
+  }
+  applyLayout(pack(L, S.gap, aspect), anchorPlace, true);
+  return L;
+}
+const MODE_NAMES = { aroundTV:'Salon um den TV', symTV:'Symmetrisch', aboveTV:'Galerie über TV', lineTV:'Mittelachse', free:'Freie Gruppe' };
+const styleName = c => c < .2 ? 'ordentlich' : c < .6 ? 'locker' : 'wild';
+
+/* =====================================================================
+   MEINE AUSWAHL: du bestimmst Rahmen und Ausrichtung, die App würfelt
+   nur das Layout. Motive und Passepartouts bleiben beim Neu würfeln erhalten.
+   ===================================================================== */
+const setItemIds = () => new Set(S.set.map(e => e.itemId).filter(id => id && byId(id)));
+const setCount = tid => S.set.filter(e => e.typeId === tid).length;
+function setAvail(tid) { const ids = setItemIds(); return T(tid).count - S.items.filter(i => i.typeId === tid && !ids.has(i.id)).length - setCount(tid); }
+const rotFor = (t, want) => want === 'q' ? t.w <= t.h : t.w > t.h; // rot-Flag für Hoch/Quer
+const canRotate = t => ['frame', 'deck', 'shelf'].includes(t.kind) && t.w !== t.h;
+function addToSet(tid) {
+  if (T(tid).kind === 'tv') { toast('Der TV ist immer dabei, wenn der Bezug ihn nutzt'); return; }
+  if (setAvail(tid) <= 0) { toast('Davon ist nichts mehr frei'); return; }
+  pushHistory();
+  const e = { id:uid(), typeId:tid, rot:T(tid).w > T(tid).h ? 'q' : 'h', itemId:null }; S.set.push(e);
+  if (ui.autoAttach && setItemIds().size) {
+    // Komposition steht schon: neues Stück direkt anbauen, der Rest bleibt, wo er ist
+    const it = makeItem(T(tid)); S.items.push(it); e.itemId = it.id;
+    attachItems([it]);
+    sel = setItemIds(); lastGen = null;
+    renderItems(); renderOverlay();
+  }
+  renderLeft(); renderPanel();
+}
+
+/* Stücke an eine bestehende Gruppe anbauen, ohne die anderen zu bewegen.
+   Kandidaten sind Positionen direkt an den Kanten der Gruppe (und am TV),
+   gewählt wird die, die Löcher füllt statt die Form aufzublähen. */
+function attachItems(items) {
+  const newIds = new Set(items.map(i => i.id)), tv = tvItem();
+  const tvG = Math.max(S.tvGap, S.gap), g = S.gap;
+  const group = [...setItemIds()].filter(id => !newIds.has(id)).map(id => rectOf(byId(id)));
+  const anchors = group.slice(); if (tv) anchors.push({ ...rectOf(tv), tv:true });
+  const all = S.items.filter(i => !newIds.has(i.id)).map(i => ({ ...rectOf(i), tv:isTV(i) }));
+  if (S.sb.show) all.push({ ...sbRect(), sb:true });
+  const tvMode = tv && ui.auto.mode !== 'free', tcx = tv ? rectOf(tv).x + rectOf(tv).w / 2 : 0;
+  items.forEach(it => {
+    const d = dims(it), pad = T(it.typeId).kind === 'plant' && it.green ? 18 : 0, h = d.h + pad;
+    const gb = bboxOf(group.length ? group : anchors) || { x:W() / 2, y:H() / 2, w:0, h:0 };
+    const gcx = gb.x + gb.w / 2, gcy = gb.y + gb.h / 2;
+    let best = null;
+    for (const p of (anchors.length ? anchors : all.filter(r => !r.sb))) {
+      const g1 = p.tv ? tvG : g, cands = [];
+      [p.y, p.y + p.h - h, p.y + (p.h - h) / 2].forEach(y => cands.push([p.x + p.w + g1, y], [p.x - g1 - d.w, y]));
+      [p.x, p.x + p.w - d.w, p.x + (p.w - d.w) / 2].forEach(x => cands.push([x, p.y + p.h + g1], [x, p.y - g1 - h]));
+      for (const [x, y] of cands) {
+        if (x < 5 || y < 5 || x + d.w > W() - 5 || y + h > H() - 5) continue;
+        if (all.some(r => { const gg = r.sb ? 15 : r.tv ? tvG : g; return x < r.x + r.w + gg - .01 && x + d.w > r.x - gg + .01 && y < r.y + r.h + gg - .01 && y + h > r.y - gg + .01; })) continue;
+        const X0 = Math.min(gb.x, x), Y0 = Math.min(gb.y, y), X1 = Math.max(gb.x + gb.w, x + d.w), Y1 = Math.max(gb.y + gb.h, y + h);
+        const growth = (X1 - X0) * (Y1 - Y0) - gb.w * gb.h;
+        const score = growth / 40 + Math.hypot(x + d.w / 2 - gcx, y + h / 2 - gcy) * 0.5 + (tvMode ? Math.abs((X0 + X1) / 2 - tcx) * 1.5 : 0);
+        if (!best || score < best.score) best = { x, y, score };
+      }
+    }
+    if (!best) { const f = findFree(d.w, d.h); best = { x:f.x, y:f.y - pad }; toast('Kein Platz direkt an der Gruppe, frei abgelegt'); }
+    it.x = q(best.x); it.y = q(best.y + pad);
+    const r = rectOf(it); group.push(r); anchors.push(r); all.push(r);
+  });
+}
+function applyRot(e) {
+  const it = e.itemId && byId(e.itemId), t = T(e.typeId); if (!it || !canRotate(t) || e.rot === 'r') return;
+  const want = rotFor(t, e.rot); if (it.rot === want) return;
+  const d0 = dims(it); it.rot = want; const d1 = dims(it);
+  it.x = q(it.x + (d0.w - d1.w) / 2); it.y = q(it.y + (d0.h - d1.h) / 2); renderItem(it);
+}
+function removeFromSet(eid, wallToo = true) {
+  pushHistory();
+  const e = S.set.find(x => x.id === eid);
+  if (e && wallToo && e.itemId) S.items = S.items.filter(i => i.id !== e.itemId);
+  S.set = S.set.filter(x => x.id !== eid);
+  sel = new Set([...sel].filter(byId)); renderItems(); renderOverlay(); renderLeft(); renderPanel();
+}
+function selToSet() {
+  const its = [...sel].map(byId).filter(it => it && !isTV(it)); if (!its.length) return;
+  pushHistory();
+  S.set = its.map(it => { const d = dims(it); return { id:uid(), typeId:it.typeId, rot:d.w > d.h ? 'q' : 'h', itemId:it.id }; });
+  S.variants = []; ui.tab = 'set'; sel.clear();
+  renderOverlay(); renderLeft(); renderPanel(); toast(`${its.length} Stück als Auswahl übernommen`);
+}
+function buildSet(newLayout) {
+  if (!S.set.length) { toast('Erst Rahmen in die Auswahl legen'); return; }
+  pushHistory();
+  const o = ui.auto, pick = a => a[Math.floor(Math.random() * a.length)];
+  if (newLayout) {
+    o.mode = tvItem() ? pick(['aroundTV', 'aroundTV', 'symTV', 'aboveTV', 'lineTV', 'free']) : 'free';
+    o.aspect = pick([2.2, 1.5, 1.5, 1, 0.7]); o.chaos = pick([.15, .3, .5, .8]);
+  }
+  CHAOS = Math.max(o.chaos, .12);   // etwas Zufall muss sein, sonst kommt immer dasselbe raus
+  const L = S.set.map(e => {
+    let it = e.itemId && byId(e.itemId);
+    if (!it || it.typeId !== e.typeId) { it = makeItem(T(e.typeId)); S.items.push(it); e.itemId = it.id; }
+    const t = T(e.typeId);
+    if (canRotate(t)) it.rot = e.rot === 'r' ? Math.random() < .5 : rotFor(t, e.rot);
+    it.x = -9999; it.y = -9999;       // aus dem Weg, damit die alte Position nicht stört
+    return { it, d:dims(it) };
+  });
+  const ids = new Set(L.map(x => x.it.id));
+  const others = S.items.filter(i => !ids.has(i.id) && !isTV(i)).map(rectOf);
+  const placed = layoutGroup(L, tvItem() ? o.mode : 'free', o.aspect, others);
+  const miss = L.filter(x => !placed.includes(x));
+  miss.forEach(x => { const f = findFree(x.d.w, x.d.h); x.it.x = q(f.x); x.it.y = q(f.y); });
+  sel = ids; lastGen = null;
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+  toast(`${MODE_NAMES[tvItem() ? o.mode : 'free']} · ${styleName(o.chaos)}${miss.length ? ` · ${miss.length} Stück frei abgelegt` : ''}`);
+}
+function saveVariant() {
+  const ids = setItemIds(); if (!ids.size) { toast('Erst eine Komposition bauen'); return; }
+  pushHistory();
+  const pos = {}; ids.forEach(id => { const it = byId(id); pos[id] = { x:it.x, y:it.y, rot:it.rot }; });
+  S.variants.push({ id:uid(), n:(S.variants.reduce((a, v) => Math.max(a, v.n), 0) + 1), mode:MODE_NAMES[tvItem() ? ui.auto.mode : 'free'], pos });
+  if (S.variants.length > 8) S.variants.shift();
+  renderPanel(); toast('Variante gemerkt');
+}
+function loadVariant(vid) {
+  const v = S.variants.find(x => x.id === vid); if (!v) return;
+  pushHistory();
+  Object.entries(v.pos).forEach(([id, p]) => { const it = byId(id); if (it) { it.x = p.x; it.y = p.y; it.rot = p.rot; renderItem(it); } });
+  sel = new Set(Object.keys(v.pos).filter(byId)); renderOverlay(); renderPanel(); toast(`Variante ${v.n} geladen`);
+}
+
+/* Zufällige Kombination aus Bezug, Form, Anzahl, Stil und ggf. Farbwelt */
+function surprise() {
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const hasTV = !!tvItem(), o = ui.auto;
+  const modes = hasTV ? ['aroundTV', 'aroundTV', 'symTV', 'aboveTV', 'lineTV', 'free'] : ['free'];
+  o.mode = pick(modes);
+  o.aspect = pick([2.2, 1.5, 1.5, 1, 0.7]);
+  o.n = { aroundTV:8 + Math.floor(Math.random() * 14), symTV:6 + 2 * Math.floor(Math.random() * 5), aboveTV:6 + Math.floor(Math.random() * 8), lineTV:4 + Math.floor(Math.random() * 5), free:6 + Math.floor(Math.random() * 12) }[o.mode];
+  o.chaos = pick([0, .25, .5, .8]);
+  o.large = Math.random() < .7;
+  o.mix = Math.random() < .35;
+  const worlds = [[], [], ['Schwarz'], ['Schwarz', 'Weiss'], ['Gold', 'Holz', 'Orange'], ['Schwarz', 'Gold'], ['Holz', 'Weiss', 'Silber']];
+  o.colors = new Set(pick(worlds));
+  // vorherigen Vorschlag ersetzen, wenn er noch ausgewählt ist
+  autoSalon();
+  const names = { aroundTV:'Salon um den TV', symTV:'Symmetrisch', aboveTV:'Galerie über TV', lineTV:'Mittelachse', free:'Freie Gruppe' };
+  toast(`${names[o.mode]} · ${o.n} Stück · ${o.chaos < .2 ? 'ordentlich' : o.chaos < .6 ? 'locker' : 'wild'}${o.colors.size ? ' · ' + [...o.colors].join('/') : ''}`);
+}
+
+/* Auto-Salon: wählt aus dem noch freien Bestand eine ausgewogene Mischung */
+function autoSalon() {
+  CHAOS = ui.auto.chaos;
+  const o = ui.auto, norm = c => c === 'Black' ? 'Schwarz' : c;
+  pushHistory();
+  if (lastGen && lastGen.every(id => byId(id)) && lastGen.length === sel.size && lastGen.every(id => sel.has(id))) S.items = S.items.filter(i => !lastGen.includes(i.id));
+  const pool = [];
+  S.types.forEach(t => {
+    const isF = t.kind === 'frame';
+    if (!isF && !(o.mix && ['record', 'plant', 'mirror', 'deck', 'shelf'].includes(t.kind))) return;
+    if (isF && o.colors.size && !o.colors.has(norm(t.color))) return;
+    if (isF && !o.large && t.w * t.h >= 2000) return;
+    for (let k = 0; k < remaining(t.id); k++) pool.push(t);
+  });
+  pool.sort(() => Math.random() - 0.5);
+  const chosen = [], per = {};
+  const take = t => { if (chosen.filter(c => c === t).length >= remaining(t.id)) return; chosen.push(t); per[t.id] = (per[t.id] || 0) + 1; }; // nie mehr als im Bestand
+  if (o.mode === 'symTV' && tvItem()) {
+    // nur Formate, die es mindestens doppelt gibt (auch farbübergreifend, z.B. 62,5×93 schwarz + weiß)
+    const byDim = {};
+    pool.forEach(t => (byDim[t.w + 'x' + t.h] = byDim[t.w + 'x' + t.h] || []).push(t));
+    const pairs = Object.values(byDim).filter(a => a.length >= 2).sort(() => Math.random() - .5);
+    pairs.sort((a, b) => (b[0].w * b[0].h >= 2000) - (a[0].w * a[0].h >= 2000));
+    if (!o.large) pairs.splice(0, pairs.length, ...pairs.filter(a => a[0].w * a[0].h < 2000));
+    for (const a of pairs) { if (chosen.length + 2 > o.n) break; take(a[0]); take(a[1]); if (a.length >= 4 && chosen.length + 2 <= o.n && Math.random() < .4) { take(a[2]); take(a[3]); } }
+    pool.length = 0;
+  }
+  if (o.large) pool.filter(t => t.kind === 'frame' && t.w * t.h >= 2000).slice(0, o.n >= 14 ? 2 : 1).forEach(take);
+  const lim = () => 2; // max. 2 gleiche Rahmen pro Vorschlag, für Abwechslung
+  for (const t of pool) { if (chosen.length >= o.n) break; if ((per[t.id] || 0) >= lim(t)) continue; if (t.w * t.h >= 2000 && chosen.filter(c => c.w * c.h >= 2000).length >= 3) continue; take(t); }
+  for (const t of pool) { if (chosen.length >= o.n) break; if (chosen.filter(c => c === t).length < remaining(t.id)) take(t); }
+  if (!chosen.length) { undoStack.pop(); updateUndo(); toast('Kein passender Bestand mehr frei'); return; }
+  const others = S.items.map(rectOf).filter((r, k) => !isTV(S.items[k]));
+  const L = chosen.map(t => { const it = makeItem(t); S.items.push(it); return { it, d:dims(it) }; });
+  const placedL = layoutGroup(L, tvItem() ? o.mode : 'free', o.aspect, others);
+  // was nicht an die Wand gepasst hat, wandert zurück ins Inventar
+  const drop = L.filter(x => !placedL.includes(x));
+  if (drop.length) { S.items = S.items.filter(i => !drop.some(d => d.it === i)); toast(`${drop.length} Stück hatten keinen Platz mehr`); }
+  sel = new Set(placedL.map(x => x.it.id)); lastGen = [...sel];
+  renderItems(); renderOverlay(); renderLeft(); renderPanel();
+  if (chosen.length < o.n) toast(`Nur ${chosen.length} passende Stücke frei`);
+}
+
+/* =====================================================================
+   PANELS
+   ===================================================================== */
+function thumb(t, size = 40) {
+  const k = size / Math.max(t.w, t.h, 40), w = t.w * k, h = t.h * k;
+  if (t.kind === 'tv') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="1.5" fill="#151515"/></svg>`;
+  if (t.kind === 'record') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#d8452f"/><circle cx="${w * .55}" cy="${h * .5}" r="${w * .28}" fill="#232323"/></svg>`;
+  if (t.kind === 'mirror') return `<svg width="${w}" height="${h}"><circle cx="${w / 2}" cy="${h / 2}" r="${w / 2}" fill="#161616"/><circle cx="${w / 2}" cy="${h / 2}" r="${w / 2 - 1.5}" fill="#c9d0d6"/></svg>`;
+  if (t.kind === 'deck') return `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${w / 2}" fill="#d8b98c" stroke="rgba(0,0,0,.2)"/></svg>`;
+  if (t.kind === 'shelf') return `<svg width="${w}" height="${h}"><path d="M1.5 ${h - 1} L1.5 ${h / 2} L${w - 1.5} ${h / 2} L${w - 1.5} 1" fill="none" stroke="#6f806f" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
+  if (t.kind === 'plant') return `<svg width="${w}" height="${h + 8}"><ellipse cx="${w / 2}" cy="5" rx="${w / 4}" ry="5" fill="#5b8a52"/><path d="M0 8 L${w} 8 L${w * .83} ${h + 8} L${w * .17} ${h + 8}Z" fill="#c7774f"/></svg>`;
+  const fc = FRAME_COLORS[t.color === 'Black' ? 'Schwarz' : t.color] || '#222', m = Math.max(1.4, 1.2 * k * 2);
+  const ppw = t.w - t.iw >= 3, iw = ppw ? t.iw * k : w - 2 * m, ih = ppw ? t.ih * k : h - 2 * m;
+  const shape = t.shape === 'oval' ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${fc}" stroke="rgba(0,0,0,.15)"/><ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2 - m}" ry="${h / 2 - m}" fill="#e9e3d6"/>`
+    : `<rect width="${w}" height="${h}" fill="${fc}" stroke="rgba(0,0,0,.15)"/><rect x="${m}" y="${m}" width="${w - 2 * m}" height="${h - 2 * m}" fill="#fbfaf6"/><rect x="${(w - iw) / 2}" y="${(h - ih) / 2}" width="${iw}" height="${ih}" fill="${t.fixed ? '#cdbf9e' : '#e3ddd0'}"/>`;
+  return `<svg width="${w}" height="${h}">${shape}</svg>`;
+}
+
+function renderLeft() {
+  const fr = S.types.filter(t => t.kind === 'frame');
+  const tot = fr.reduce((a, t) => a + t.count, 0), u = fr.reduce((a, t) => a + used(t.id), 0);
+  const colors = [...new Set(fr.map(t => t.color === 'Black' ? 'Schwarz' : t.color))];
+  const area = S.items.reduce((a, it) => a + rectOf(it).w * rectOf(it).h, 0) / 1e4;
+  let h = `<div class="sec"><h3>Inventar <span class="r">${u}/${tot} Rahmen</span></h3>
+    <div class="progress"><i style="width:${u / tot * 100}%"></i></div>
+    <p class="summary" style="margin:8px 0 0">Belegt: <b>${fmt(area)} m²</b> von ${fmt(W() * H() / 1e4)} m² Wand · Platten <b>${used('rec')}/${T('rec').count}</b> · Pflanzen <b>${used('plant')}/${T('plant').count}</b> · Decks <b>${used('deck')}/${T('deck').count}</b></p></div>
+    <div class="sec"><div class="chips" style="margin-bottom:8px">
+      <span class="chip ${!ui.colorFilter ? 'on' : ''}" data-cf="">Alle</span>
+      ${colors.map(c => `<span class="chip ${ui.colorFilter === c ? 'on' : ''}" data-cf="${c}"><i class="dot" style="background:${FRAME_COLORS[c]}"></i>${c}</span>`).join('')}
+    </div>
+    <label class="tog"><input type="checkbox" id="onlyAvail" ${ui.onlyAvail ? 'checked' : ''}> nur noch verfügbare</label>
+    ${ui.tab === 'set' ? `<p style="margin:10px 0 0;font-size:12px;color:var(--accent)">Auswahl-Modus: + legt Stücke in „Meine Auswahl“ statt direkt an die Wand.</p>` : ''}`;
+  const groups = [['Wand & Objekte', S.types.filter(t => t.kind !== 'frame')], ['Rahmen', [...fr].sort((a, b) => b.w * b.h - a.w * a.h)]];
+  groups.forEach(([name, list]) => {
+    const vis = list.filter(t => (!ui.colorFilter || t.kind !== 'frame' || (t.color === 'Black' ? 'Schwarz' : t.color) === ui.colorFilter) && (!ui.onlyAvail || remaining(t.id) > 0));
+    if (!vis.length) return;
+    h += `<div class="inv-group"><h4>${name}</h4>`;
+    vis.forEach(t => {
+      const setMode = ui.tab === 'set', sc = setCount(t.id);
+      const r = setMode ? setAvail(t.id) : remaining(t.id), n = used(t.id);
+      const t2 = t.kind === 'frame' ? `Bild ${fmt(t.iw)}×${fmt(t.ih)} · ${t.color}` : t.note;
+      h += `<div class="inv ${r <= 0 ? 'empty' : ''}" draggable="${r > 0}" data-tid="${t.id}">
+        <div class="th">${thumb(t)}</div>
+        <div class="meta"><div class="t1">${t.kind === 'frame' ? fmt(t.w) + '×' + fmt(t.h) : esc(t.title)}${t.fixed ? `<span class="fixb">${esc(t.title)}</span>` : ''}</div><div class="t2">${esc(t2)}</div></div>
+        ${sc ? `<span class="setbadge">Set ${sc}</span>` : ''}<span class="badge ${remaining(t.id) <= 0 ? 'full' : ''}" data-cnt="${t.id}" title="Klicken, um die Anzahl im Bestand zu ändern" style="cursor:pointer">${n}/${t.count}</span>
+        <button class="add" data-add="${t.id}" title="${setMode ? 'In meine Auswahl legen' : 'An die Wand hängen'}" style="${setMode ? 'border-color:var(--accent);color:var(--accent)' : ''}" ${r <= 0 || (setMode && t.kind === 'tv') ? 'disabled' : ''}>+</button></div>`;
+    });
+    h += `</div>`;
+  });
+  h += `<details style="margin-top:12px"><summary>Eigenes Objekt ergänzen</summary>
+    <div style="margin-top:8px">
+      <div class="row"><label>Außenmaß</label><input class="num" id="nW" type="number" step=".5" placeholder="B"> <input class="num" id="nH" type="number" step=".5" placeholder="H"></div>
+      <div class="row"><label>Bildmaß</label><input class="num" id="nIW" type="number" step=".5" placeholder="B"> <input class="num" id="nIH" type="number" step=".5" placeholder="H"></div>
+      <div class="row"><label>Farbe</label><select id="nC">${Object.keys(FRAME_COLORS).map(c => `<option>${c}</option>`).join('')}</select></div>
+      <div class="row"><label>Anzahl</label><input class="num" id="nN" type="number" value="1" min="1"></div>
+      <div class="row"><label>Notiz</label><input id="nNote" style="flex:1;padding:5px 6px;border:1px solid var(--line);border-radius:7px"></div>
+      <button class="btn" id="nAdd">Zum Inventar</button>
+    </div></details></div>`;
+  $('#left').innerHTML = h;
+}
+$('#left').addEventListener('click', e => {
+  const cf = e.target.closest('[data-cf]'); if (cf) { ui.colorFilter = cf.dataset.cf || null; renderLeft(); return; }
+  const cn = e.target.closest('[data-cnt]');
+  if (cn) { const t = T(cn.dataset.cnt), v = parseInt(prompt(`Wie viele ${t.kind === 'frame' ? 'Rahmen ' + fmt(t.w) + '×' + fmt(t.h) : t.title} hast du?`, t.count), 10);
+    if (v >= 0) { if (v < used(t.id)) { toast(`Es hängen schon ${used(t.id)}, erst welche entfernen`); return; } pushHistory(); t.count = v; renderLeft(); renderPanel(); } return; }
+  const a = e.target.closest('[data-add]'); if (a) { ui.tab === 'set' ? addToSet(a.dataset.add) : addType(a.dataset.add); return; }
+  if (e.target.id === 'nAdd') {
+    const v = id => parseFloat(($('#' + id).value || '').replace(',', '.'));
+    const w = v('nW'), h = v('nH'); if (!(w > 0 && h > 0)) { toast('Außenmaß fehlt'); return; }
+    const iw = v('nIW') || w, ih = v('nIH') || h, note = $('#nNote').value.trim();
+    pushHistory();
+    const t = F(Math.min(iw, ih), Math.max(iw, ih), Math.min(w, h), Math.max(w, h), $('#nC').value, Math.max(1, v('nN') || 1), note);
+    t.id = 'c' + uid(); S.types.push(t); renderLeft(); toast('Zum Inventar hinzugefügt');
+  }
+});
+$('#left').addEventListener('change', e => { if (e.target.id === 'onlyAvail') { ui.onlyAvail = e.target.checked; renderLeft(); } });
+$('#left').addEventListener('dragstart', e => { const el = e.target.closest('[data-tid]'); if (el) e.dataTransfer.setData('text/plain', 'type:' + el.dataset.tid); });
+
+/* ---------- Rechtes Panel: Drawer (1 Objekt), Anordnen (mehrere), Komposition (nichts) ---------- */
+function renderPanel() {
+  const its = [...sel].map(byId).filter(Boolean);
+  if (sel.has('sb')) return renderSBPanel();
+  if (its.length === 1) return renderDrawer(its[0]);
+  if (its.length > 1) return renderMulti(its);
+  renderCompose();
+}
+function renderPanelSoft() {
+  // nur Positionsfelder aktualisieren, ohne Fokus zu verlieren
+  const its = [...sel].map(byId).filter(Boolean);
+  if (its.length === 1) { const it = its[0], r = rectOf(it); const px = $('#posX'), pb = $('#posB');
+    if (px && document.activeElement !== px) px.value = fmt(r.x).replace(',', '.');
+    if (pb && document.activeElement !== pb) pb.value = fmt(H() - r.y - r.h).replace(',', '.'); }
+  else if (its.length > 1) renderPanel();
+}
+const secPos = (it) => { const r = rectOf(it); return `<div class="sec"><h3>Position</h3>
+  <div class="row"><label>Links (Kante)</label><input class="num" id="posX" data-k="posX" type="number" step=".5" value="${r.x}"><span class="muted">cm</span></div>
+  <div class="row"><label>Unterkante</label><input class="num" id="posB" data-k="posB" type="number" step=".5" value="${H() - r.y - r.h}"><span class="muted">cm ab Boden</span></div>
+  <p class="muted" style="margin:0;font-size:12px">Oberkante ${fmt(H() - r.y)} cm · Mitte ${fmt(H() - r.y - r.h / 2)} cm ab Boden</p></div>`; };
+const secMotif = (it, what = 'Motiv') => `<div class="sec"><h3>${what}</h3>
+  <div class="upload"><button class="btn" data-act="upload">${it.img ? 'Bild ersetzen' : 'Bild hochladen'}</button>${it.img ? '<button class="btn ghost danger" data-act="rmimg">Entfernen</button>' : ''}<input type="file" id="imgFile" accept="image/*" hidden></div>
+  ${it.img ? `<div class="row" style="margin-top:10px"><label>Zoom</label><input type="range" data-k="zoom" min="1" max="3" step=".01" value="${it.zoom}"></div>
+  <div class="row"><label>Links ↔ Rechts</label><input type="range" data-k="ox" min="-1" max="1" step=".01" value="${it.ox}"></div>
+  <div class="row"><label>Oben ↕ Unten</label><input type="range" data-k="oy" min="-1" max="1" step=".01" value="${it.oy}"></div>` : `<p class="muted" style="margin:8px 0 0;font-size:12px">Tipp: Bild auch direkt aus dem Finder auf den Rahmen ziehen.</p>`}</div>`;
+const secActions = (it, rot) => `<div class="sec"><h3>Notiz</h3><textarea data-k="note" placeholder="z.B. Druck bestellen, Motiv von Yuna …">${esc(it.note)}</textarea>
+  <div class="actions" style="margin-top:10px">${rot ? '<button class="btn" data-act="rot">Drehen (R)</button>' : ''}<button class="btn" data-act="dup">Duplizieren</button>
+  <button class="btn" data-act="lock">${it.locked ? 'Entsperren' : 'Sperren'}</button><button class="btn danger" data-act="del">Entfernen</button></div></div>`;
+
+function renderDrawer(it) {
+  const t = T(it.typeId), d = dims(it);
+  let h = `<div class="sec"><div class="drawer-head"><div><div class="t">${t.kind === 'frame' ? (t.title || 'Rahmen') : esc(t.title)}</div>
+    <div class="s">${fmt(d.w)}×${fmt(d.h)} cm außen${t.kind === 'frame' ? ` · Bild ${fmt(t.iw)}×${fmt(t.ih)}` : ''}${t.fixed ? ' · <span class="fixb">fix</span>' : ''}</div></div>
+    <button class="btn ghost icon x" data-act="close" title="Schließen">✕</button></div>
+    ${t.note && !t.fixed ? `<p class="muted" style="margin:8px 0 0;font-size:12px">${esc(t.note)}</p>` : ''}
+    ${t.fixed ? `<p class="muted" style="margin:8px 0 0;font-size:12px">Fixes Motiv laut Liste. Passepartout ist aus, ein Foto kannst du trotzdem zur Vorschau hochladen.</p>` : ''}</div>`;
+  if (t.kind === 'frame') {
+    const ow = d.w - 2 * it.m, oh = d.h - 2 * it.m, fcName = it.color || t.color;
+    h += secMotif(it);
+    h += `<div class="sec"><h3>Passepartout <label class="tog r"><input type="checkbox" data-k="pp" ${it.pp ? 'checked' : ''}> an</label></h3>
+      ${it.pp ? `<div class="row"><label>Farbe</label>${PP_COLORS.map(([n, c]) => `<button class="sw ${it.ppColor === c ? 'on' : ''}" title="${n}" style="background:${c}" data-pp="${c}"></button>`).join('')}<input type="color" data-k="ppColor" value="${it.ppColor}" style="width:28px;height:26px;border:1px solid var(--line);border-radius:6px;padding:1px"></div>
+      <div class="row"><label>Ausschnitt</label><input class="num" data-k="cutW" type="number" step=".5" min="2" max="${fmt(it.rot ? oh : ow).replace(',', '.')}" value="${it.cutW}"><span class="muted">×</span><input class="num" data-k="cutH" type="number" step=".5" min="2" value="${it.cutH}"></div>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">Öffnung im Rahmen ${fmt(it.rot ? oh : ow)}×${fmt(it.rot ? ow : oh)} cm · Rand ${fmt(((it.rot ? oh : ow) - it.cutW) / 2)} cm</p>
+      <button class="btn ghost" data-act="cutReset">Bildmaß aus Liste (${fmt(t.iw)}×${fmt(t.ih)})</button>` : `<p class="muted" style="margin:0;font-size:12px">Ohne Passepartout füllt das Motiv die Rahmenöffnung.</p>`}</div>`;
+    h += `<div class="sec"><h3>Rahmen</h3>
+      <div class="row"><label>Farbe</label>${Object.entries(FRAME_COLORS).map(([n, c]) => `<button class="sw ${fcName === n || (fcName === 'Black' && n === 'Schwarz') ? 'on' : ''}" title="${n}" style="background:${c}" data-fc="${n}"></button>`).join('')}</div>
+      <div class="row"><label>Leistenbreite</label><input class="num" data-k="m" type="number" step=".25" min=".25" max="10" value="${it.m}"><span class="muted">cm (geschätzt)</span></div>
+      <div class="row"><label>Format</label><button class="btn ${!it.rot ? 'primary' : ''}" data-act="${it.rot ? 'rot' : ''}">Hoch</button><button class="btn ${it.rot ? 'primary' : ''}" data-act="${!it.rot ? 'rot' : ''}">Quer</button></div></div>`;
+  }
+  if (t.kind === 'record') h += secMotif(it, 'Cover');
+  if (t.kind === 'deck') h += secMotif(it, 'Grafik') + `<div class="sec"><h3>Deck</h3>
+    <label class="tog"><input type="checkbox" data-k="grip" ${it.grip ? 'checked' : ''}> Griptape-Seite zeigen (schwarz)</label>
+    <div class="row" style="margin-top:8px"><label>Format</label><button class="btn ${!it.rot ? 'primary' : ''}" data-act="${it.rot ? 'rot' : ''}">Vertikal</button><button class="btn ${it.rot ? 'primary' : ''}" data-act="${!it.rot ? 'rot' : ''}">Horizontal</button></div>
+    <p class="muted" style="margin:0;font-size:12px">Standardmaß 8,0″ × 31,8″ (ca. 20,5 × 81 cm). Breitere Decks (8,25″ bis 8,5″) sind 1 bis 2 cm breiter.</p></div>`;
+  if (t.kind === 'shelf') h += `<div class="sec"><h3>Farbe (Sprühlack)</h3><div class="row" style="flex-wrap:wrap">${SHELF_COLORS.map(([n, c]) => `<button class="sw ${it.shelfColor === c ? 'on' : ''}" title="${n}" style="background:${c}" data-shelf="${c}"></button>`).join('')}<input type="color" data-k="shelfColor" value="${it.shelfColor}" style="width:28px;height:26px;border:1px solid var(--line);border-radius:6px;padding:1px"></div>
+    <div class="row"><label>Montage</label><button class="btn ${!it.rot ? 'primary' : ''}" data-act="${it.rot ? 'rot' : ''}">Horizontal 60×35</button><button class="btn ${it.rot ? 'primary' : ''}" data-act="${!it.rot ? 'rot' : ''}">Vertikal 35×60</button></div>
+    <div class="row"><label>Form</label><button class="btn ${!it.flip ? 'primary' : ''}" data-act="${it.flip ? 'flip' : ''}">Z</button><button class="btn ${it.flip ? 'primary' : ''}" data-act="${!it.flip ? 'flip' : ''}">S (gespiegelt)</button></div>
+    <p class="muted" style="margin:0;font-size:12px">Frontansicht: Gitterboden 60×20 cm, an den Enden je eine Platte nach unten bzw. oben. Vertikal wird daraus ein Steg mit kleinem Fach oben und unten, wie im IKEA-Raumbild. Max. 10 kg, Schrauben separat.</p></div>`;
+  if (t.kind === 'mirror') h += `<div class="sec"><h3>Hinweis</h3><p class="muted" style="margin:0;font-size:12px">Konvexer Spiegel, Ø 41 cm, 5 cm tief. Spiegelt je nach Position das Ambilight oder Fenster, abends kurz testen.</p></div>`;
+  if (t.kind === 'plant') h += `<div class="sec"><h3>Topf</h3><div class="row"><label>Farbe</label>${POT_COLORS.map(([n, c]) => `<button class="sw ${it.pot === c ? 'on' : ''}" title="${n}" style="background:${c}" data-pot="${c}"></button>`).join('')}</div>
+    <label class="tog"><input type="checkbox" data-k="green" ${it.green ? 'checked' : ''}> Pflanze anzeigen</label></div>`;
+  if (t.kind === 'tv') h += `<div class="sec"><h3>Hinweis</h3><p class="muted" style="margin:0;font-size:12px">Faustregel: Bildmitte etwa auf Augenhöhe im Sitzen (ca. 100 bis 115 cm, je nach Sofa). Kabelweg zum Sideboard mitdenken. Der lila Rahmen zeigt die Ambilight-Zone, die frei bleiben sollte.</p></div>`;
+  h += secPos(it) + secActions(it, canRotate(t));
+  $('#right').innerHTML = h;
+}
+function renderMulti(its) {
+  const bb = bboxOf(its.map(rectOf));
+  $('#right').innerHTML = `<div class="sec"><div class="drawer-head"><div><div class="t">${its.length} Objekte</div><div class="s">Gruppe ${fmt(bb.w)}×${fmt(bb.h)} cm · Mitte ${fmt(H() - bb.y - bb.h / 2)} cm ab Boden</div></div><button class="btn ghost icon x" data-act="close">✕</button></div></div>
+  ${lastGen && lastGen.length === its.length && lastGen.every(id => sel.has(id)) ? `<div class="sec" style="background:var(--accent-soft)"><h3>Vorschlag</h3>
+    <div class="actions"><button class="btn primary" data-act="auto" style="flex:1">Neu würfeln</button><button class="btn" data-act="surprise">Überrasch mich</button><button class="btn" data-act="close">Passt so</button></div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Neu würfeln behält die Einstellungen, Überrasch mich mischt alles neu. Einzelne Stücke kannst du danach frei verschieben.</p></div>` : ''}
+  ${(() => { const ids = setItemIds(); return ids.size && ids.size === its.length && its.every(it => ids.has(it.id)); })() ? `<div class="sec" style="background:var(--accent-soft)"><h3>Meine Auswahl</h3>
+    <div class="row"><label>Bezug</label><select id="aMode">${MODE_OPTS.map(([v, l]) => `<option value="${v}" ${ui.auto.mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="actions"><button class="btn primary" data-act="setBuild" style="flex:1">Neu würfeln</button><button class="btn" data-act="setShuffle">Anderes Layout</button><button class="btn" data-act="varSave">Merken</button></div>
+    ${S.variants.length ? `<div class="actions" style="margin-top:8px">${S.variants.map(v => `<button class="vchip" data-var="${v.id}">V${v.n}</button>`).join('')}</div>` : ''}</div>` : ''}
+  <div class="sec"><h3>Komposition</h3>
+    <div class="row"><button class="btn primary" data-arr="salon" style="flex:1">Salon kompakt</button>
+      <select id="salonAspect" style="flex:0 0 118px">${[[2.2, 'Breit 2,2:1'], [1.5, 'Quer 3:2'], [1, 'Quadrat'], [0.7, 'Hoch']].map(([v, l]) => `<option value="${v}" ${ui.salonAspect == v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="row"><button class="btn" data-arr="grid" style="flex:1">Raster</button><input class="num" id="gridCols" type="number" min="1" max="12" value="${ui.gridCols}"><span class="muted">Spalten</span></div>
+    <div class="grid2"><button class="btn" data-arr="rowC">Reihe: Mittelachse</button><button class="btn" data-arr="rowT">Reihe: Oberkante</button>
+    <button class="btn" data-arr="rowB">Reihe: Unterkante</button><button class="btn" data-arr="col">Spalte</button>
+    <button class="btn" data-arr="distH">Horizontal verteilen</button><button class="btn" data-arr="distV">Vertikal verteilen</button></div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Alle Layouts nutzen ${fmt(S.gap)} cm Abstand, am TV ${fmt(Math.max(S.tvGap, S.gap))} cm.${its.some(isTV) ? ' TV ist in der Auswahl: "Salon kompakt" lässt ihn stehen und ordnet alles drumherum.' : ''}</p></div>
+  <div class="sec"><h3>Ausrichten</h3><div class="grid2">
+    <button class="btn" data-mv="sbCenter">Mittig über Sideboard</button><button class="btn" data-mv="aboveSb">25 cm über Sideboard</button>
+    <button class="btn" data-mv="wallCenter">Wandmitte</button><button class="btn" data-mv="eye">Mitte auf 150 cm</button></div></div>
+  <div class="sec"><div class="actions"><button class="btn" data-act="toSet" title="Genau diese Stücke als fixe Auswahl nehmen und Layouts würfeln">Als Auswahl übernehmen</button><button class="btn" data-act="rot">Drehen</button><button class="btn" data-act="dup">Duplizieren</button><button class="btn danger" data-act="del">Entfernen</button></div></div>`;
+}
+function renderSBPanel() {
+  const b = S.sb;
+  $('#right').innerHTML = `<div class="sec"><div class="drawer-head"><div><div class="t">Tylko Sideboard</div><div class="s">${b.w}×${b.h}×${b.d} cm · Original Classic, Multiplex</div></div><button class="btn ghost icon x" data-act="close">✕</button></div></div>
+  <div class="sec"><h3>Position</h3><div class="row"><label>Links (Kante)</label><input class="num" data-k="sbx" type="number" step=".5" value="${b.x}"><span class="muted">cm</span></div>
+    <div class="grid2"><button class="btn" data-sbm="center">Wandmitte</button><button class="btn" data-sbm="left">Bündig links</button></div></div>
+  <div class="sec"><h3>Darstellung</h3><div class="row"><label>Farbe</label><input type="color" data-k="sbc" value="${b.color}" style="width:28px;height:26px;border:1px solid var(--line);border-radius:6px;padding:1px"></div>
+    <label class="tog"><input type="checkbox" data-k="sbshow" ${b.show ? 'checked' : ''}> Sideboard anzeigen</label>
+    <p class="muted" style="margin:10px 0 0;font-size:12px">Laut Tylko-Anleitung wird das Sideboard mit Wandhalterungen fixiert. Die sitzen knapp unter der Oberkante (ca. ${fmt(b.h - 3)} cm ab Boden), dort also nicht für Kabel bohren.</p></div>`;
+}
+const MODE_OPTS = [['aroundTV', 'Salon rund um den TV'], ['symTV', 'Symmetrisch neben TV'], ['aboveTV', 'Galerie über dem TV'], ['lineTV', 'Mittelachse durch den TV'], ['free', 'Freie Gruppe (Platzierung)']];
+const formRow = o => `<div class="row"><label>Form</label><select id="aAsp">${[[2.2, 'Breit 2,2:1'], [1.5, 'Quer 3:2'], [1, 'Quadrat'], [0.7, 'Hoch']].map(([v, l]) => `<option value="${v}" ${o.aspect == v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
+function setPanel() {
+  const o = ui.auto, ids = setItemIds(), built = ids.size > 0;
+  const area = S.set.reduce((a, e) => a + T(e.typeId).w * T(e.typeId).h, 0) / 1e4;
+  const rows = S.set.map(e => {
+    const t = T(e.typeId);
+    const rot = canRotate(t) ? `<div class="seg sm">${[['h', 'Hoch'], ['q', 'Quer'], ['r', 'Zufall']].map(([v, l]) => `<button data-srot="${e.id}:${v}" class="${e.rot === v ? 'on' : ''}">${l}</button>`).join('')}</div>` : '';
+    return `<div class="setrow"><div class="th">${thumb(t, 26)}</div><div class="meta">${t.kind === 'frame' ? fmt(t.w) + '×' + fmt(t.h) + ' ' + t.color : esc(t.title)}${t.fixed ? `<small>${esc(t.title)}</small>` : ''}</div>${rot}<button class="btn ghost icon" data-sdel="${e.id}" title="Aus der Auswahl (und von der Wand) entfernen">✕</button></div>`;
+  }).join('');
+  return `<div class="sec"><h3>Meine Auswahl <span class="r">${S.set.length} Stück · ${fmt(area)} m²</span></h3>
+    ${S.set.length ? rows : `<p class="muted" style="margin:0;font-size:12.5px">Leg links im Inventar mit + fest, welche Rahmen dabei sein sollen, und stell pro Rahmen Hoch, Quer oder Zufall ein. Oder markier Rahmen an der Wand und klick auf „Als Auswahl übernehmen“.</p>`}
+    <label class="tog" style="margin-top:10px;display:flex"><input type="checkbox" id="autoAttach" ${ui.autoAttach ? 'checked' : ''}> Neue Stücke direkt an die bestehende Komposition anbauen</label>
+    ${S.set.length ? `<div class="actions" style="margin-top:10px"><button class="btn ghost" data-act="setAllRot">Alle auf Zufall</button><button class="btn ghost danger" data-act="setClear">Leeren</button></div>` : ''}</div>
+  <div class="sec"><h3>Layout</h3>
+    <div class="row"><label>Bezug</label><select id="aMode">${MODE_OPTS.map(([v, l]) => `<option value="${v}" ${o.mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="row"><label>Zufall</label><input type="range" id="aC" min="0" max="1" step=".05" value="${o.chaos}"><b style="width:54px;text-align:right;font-weight:500">${styleName(o.chaos)}</b></div>
+    ${formRow(o)}
+    ${o.mode === 'free' || !tvItem() ? `<div class="row"><label>Platzierung</label><select id="anchor">${[['sideboard', 'Über dem Sideboard'], ['aboveTV', 'Über dem TV'], ['rightTV', 'Rechts vom TV'], ['leftTV', 'Links vom TV'], ['eye', 'Wandmitte'], ['free', 'Freier Platz']].map(([v, l]) => `<option value="${v}" ${ui.anchor === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
+    <div class="actions" style="margin-top:6px"><button class="btn primary" data-act="setBuild" style="flex:1" ${S.set.length ? '' : 'disabled'}>${built ? 'Neu würfeln' : 'Komposition bauen'}</button><button class="btn" data-act="setShuffle" ${S.set.length ? '' : 'disabled'}>Anderes Layout</button></div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Es bleiben immer genau diese Stücke. Neu würfeln behält Bezug und Stil, Anderes Layout mischt beides. Motive und Passepartouts bleiben erhalten.</p></div>
+  ${built ? variantsSec() : ''}`;
+}
+const variantsSec = () => `<div class="sec"><h3>Varianten <span class="r">${S.variants.length}/8</span></h3>
+  <div class="actions">${S.variants.map(v => `<button class="vchip" data-var="${v.id}" title="${esc(v.mode)}">V${v.n} · ${esc(v.mode)}</button>`).join('')}
+  <button class="btn" data-act="varSave">+ Variante merken</button>${S.variants.length ? '<button class="btn ghost danger" data-act="varClear">Alle löschen</button>' : ''}</div>
+  <p class="muted" style="margin:8px 0 0;font-size:12px">Gute Würfe merken und später per Klick vergleichen.</p></div>`;
+function renderCompose() {
+  const is = issues(), frames = S.items.filter(i => T(i.typeId).kind !== 'tv');
+  const sb = sbRect(), tv = S.items.find(i => i.typeId === 'tv');
+  const checks = [];
+  checks.push(is.ov ? ['var(--danger)', `${is.ov} Überlappung${is.ov > 1 ? 'en' : ''}`, 'Rot gestrichelt markiert'] : ['var(--ok)', 'Keine Überlappungen', '']);
+  if (is.out) checks.push(['var(--danger)', `${is.out} Objekt${is.out > 1 ? 'e' : ''} außerhalb der Wand`, '']);
+  checks.push(is.tight ? ['var(--warn)', `${is.tight} Abstand${is.tight > 1 ? 'e' : ''} unter ${fmt(S.gap)} cm`, 'Einheitliche Abstände wirken ruhiger'] : ['var(--ok)', `Abstände ≥ ${fmt(S.gap)} cm`, '']);
+  if (tv) checks.push(is.tvTight ? ['var(--danger)', `${is.tvTight}× zu nah am TV`, `Ambilight braucht ${fmt(Math.max(S.tvGap, S.gap))} cm rundum`] : ['var(--ok)', 'Ambilight-Zone frei', `${fmt(Math.max(S.tvGap, S.gap))} cm rund um den TV`]);
+  const above = S.items.filter(i => { const r = rectOf(i); return r.x < sb.x + sb.w && r.x + r.w > sb.x && r.y + r.h <= sb.y + .1; });
+  if (above.length && S.sb.show) { const c = Math.min(...above.map(i => sb.y - (rectOf(i).y + rectOf(i).h))); checks.push([c >= 15 && c <= 35 ? 'var(--ok)' : 'var(--warn)', `${fmt(c)} cm Luft über dem Sideboard`, 'Faustregel 15 bis 30 cm, damit Möbel und Wand zusammen wirken']); }
+  if (tv) { const r = rectOf(tv), m = H() - r.y - r.h / 2; checks.push([m >= 95 && m <= 125 ? 'var(--ok)' : 'var(--warn)', `TV-Mitte ${fmt(m)} cm ab Boden`, 'Faustregel sitzend ca. 100 bis 115 cm']); }
+  if (frames.length > 1) { const bb = bboxOf(frames.map(rectOf)); checks.push(['#9c8f78', `Hängung ${fmt(bb.w)}×${fmt(bb.h)} cm`, `Schwerpunkt ${fmt(H() - bb.y - bb.h / 2)} cm ab Boden`]); }
+  const fr = S.types.filter(t => t.kind === 'frame'), colors = [...new Set(fr.map(t => t.color === 'Black' ? 'Schwarz' : t.color))];
+  const o = ui.auto;
+  const tabs = `<div class="sec"><div class="seg"><button data-tab="suggest" class="${ui.tab === 'suggest' ? 'on' : ''}">Vorschläge</button><button data-tab="set" class="${ui.tab === 'set' ? 'on' : ''}">Meine Auswahl${S.set.length ? ' · ' + S.set.length : ''}</button></div></div>`;
+  const tail = `<div class="sec"><h3>Checks</h3>${checks.map(([c, a, b]) => `<div class="check"><i class="dot" style="background:${c}"></i><div>${a}${b ? `<small>${b}</small>` : ''}</div></div>`).join('')}</div>
+  <div class="sec"><h3>Bohrplan</h3><div class="row"><label>Aufhänger</label><input class="num" id="hang" type="number" step=".5" value="${S.hangOffset}"><span class="muted">cm unter Oberkante</span></div>
+    <button class="btn" data-act="print" style="width:100%">Bohrplan drucken / als PDF</button></div>`;
+  if (ui.tab === 'set') { $('#right').innerHTML = tabs + setPanel() + tail; return; }
+  $('#right').innerHTML = tabs + `<div class="sec"><h3>Platzierung von Vorlagen & freien Gruppen</h3>
+    <select id="anchor" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff">
+      ${[['sideboard', 'Mittig über dem Sideboard'], ['aboveTV', 'Über dem TV'], ['rightTV', 'Rechts neben dem TV'], ['leftTV', 'Links neben dem TV'], ['eye', 'Wandmitte auf Augenhöhe'], ['free', 'Nächster freier Platz']].map(([v, l]) => `<option value="${v}" ${ui.anchor === v ? 'selected' : ''}>${l}</option>`).join('')}
+    </select></div>
+  <div class="sec"><h3>Auto-Komposition</h3>
+    <div class="row"><label>Bezug</label><select id="aMode">${[['aroundTV', 'Salon rund um den TV'], ['symTV', 'Symmetrisch neben TV'], ['aboveTV', 'Galerie über dem TV'], ['lineTV', 'Mittelachse durch den TV'], ['free', 'Freie Gruppe (Platzierung)']].map(([v, l]) => `<option value="${v}" ${o.mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="row"><label>Anzahl</label><input type="range" id="aN" min="3" max="40" value="${o.n}"><b style="width:24px;text-align:right">${o.n}</b></div>
+    <div class="row"><label>Zufall</label><input type="range" id="aC" min="0" max="1" step=".05" value="${o.chaos}"><b style="width:54px;text-align:right;font-weight:500">${o.chaos < .2 ? 'ordentlich' : o.chaos < .6 ? 'locker' : 'wild'}</b></div>
+    ${formRow(o)}
+    <div class="chips" style="margin:4px 0 8px">${colors.map(c => `<span class="chip ${o.colors.has(c) ? 'on' : ''}" data-ac="${c}"><i class="dot" style="background:${FRAME_COLORS[c]}"></i>${c}</span>`).join('')}</div>
+    <label class="tog" style="margin-right:10px"><input type="checkbox" id="aL" ${o.large ? 'checked' : ''}> große Anker</label>
+    <label class="tog"><input type="checkbox" id="aM" ${o.mix ? 'checked' : ''}> Objekte einmischen</label>
+    <div class="actions" style="margin-top:10px"><button class="btn primary" data-act="auto" style="flex:1">Vorschlag erzeugen</button><button class="btn" data-act="surprise" title="Zufälliger Bezug, Form, Anzahl und Stil">Überrasch mich</button></div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Nimmt nur, was noch frei ist. Nochmal klicken, solange die Gruppe ausgewählt ist, würfelt neu. Am TV gilt immer der Ambilight-Abstand (${fmt(Math.max(S.tvGap, S.gap))} cm), der TV selbst bleibt stehen.</p></div>
+  <div class="sec"><h3>Vorlagen</h3><div class="grid2">${TEMPLATES.map((tp, i) => `<button class="tpl" data-tpl="${i}" ${tplAvail(tp) ? '' : 'disabled'}><b>${tp.label}</b><span>${tp.sub}</span></button>`).join('')}</div></div>
+  <div class="sec"><h3>Checks</h3>${checks.map(([c, a, b]) => `<div class="check"><i class="dot" style="background:${c}"></i><div>${a}${b ? `<small>${b}</small>` : ''}</div></div>`).join('')}</div>
+  <div class="sec"><h3>Bohrplan</h3><div class="row"><label>Aufhänger</label><input class="num" id="hang" type="number" step=".5" value="${S.hangOffset}"><span class="muted">cm unter Oberkante</span></div>
+    <button class="btn" data-act="print" style="width:100%">Bohrplan drucken / als PDF</button></div>
+  <div class="sec"><h3>Faustregeln</h3><ul class="tips">
+    <li>Ein fester Abstand (5 bis 8 cm) hält auch wilde Formate zusammen.</li>
+    <li>Erst Anker setzen (die großen), dann mittlere, die kleinen zuletzt als Füller.</li>
+    <li>Mindestens eine durchgehende Linie halten: Ober-, Unterkante oder Mittelachse.</li>
+    <li>Farben diagonal streuen statt clustern, z.B. Gold und Holz über die Fläche verteilen.</li>
+    <li>Außenkontur als ruhige Form denken, das Innere darf lebendig sein.</li>
+    <li>Den TV als größtes Bild der Wand behandeln: Kunst drumherum komponieren, aber mit Luft fürs Ambilight.</li></ul></div>`;
+}
+
+/* Delegierte Events im rechten Panel */
+const R = $('#right');
+R.addEventListener('click', e => {
+  const b = e.target.closest('button, .chip'); if (!b) return;
+  const one = [...sel].map(byId).filter(Boolean), it = one.length === 1 ? one[0] : null;
+  const act = b.dataset.act;
+  if (act === 'close') { sel.clear(); renderOverlay(); renderPanel(); }
+  if (act === 'rot') rotateSel();
+  if (act === 'flip' && it) { pushHistory(); it.flip = !it.flip; renderItem(it); renderPanel(); }
+  if (act === 'dup') duplicateSel();
+  if (act === 'del') removeSel();
+  if (act === 'lock' && it) { pushHistory(); it.locked = !it.locked; renderItems(); renderPanel(); }
+  if (act === 'upload') $('#imgFile').click();
+  if (act === 'rmimg' && it) { pushHistory(); it.img = null; renderItem(it); renderPanel(); }
+  if (act === 'cutReset' && it) { pushHistory(); const t = T(it.typeId); it.cutW = t.iw; it.cutH = t.ih; renderItem(it); renderPanel(); }
+  if (act === 'auto') autoSalon();
+  if (act === 'surprise') surprise();
+  if (act === 'setBuild') buildSet(false);
+  if (act === 'setShuffle') buildSet(true);
+  if (act === 'toSet') selToSet();
+  if (act === 'varSave') saveVariant();
+  if (act === 'varClear') { pushHistory(); S.variants = []; renderPanel(); }
+  if (act === 'setClear') { pushHistory(); const ids = setItemIds(); S.items = S.items.filter(i => !ids.has(i.id)); S.set = []; S.variants = []; sel.clear(); renderItems(); renderOverlay(); renderLeft(); renderPanel(); }
+  if (act === 'setAllRot') { pushHistory(); S.set.forEach(e => { if (canRotate(T(e.typeId))) e.rot = 'r'; }); renderPanel(); }
+  if (b.dataset.tab) { ui.tab = b.dataset.tab; renderLeft(); renderPanel(); }
+  if (b.dataset.sdel) removeFromSet(b.dataset.sdel);
+  if (b.dataset.srot) { const [eid, v] = b.dataset.srot.split(':'), e2 = S.set.find(x => x.id === eid); if (e2) { pushHistory(); e2.rot = v; applyRot(e2); const it2 = e2.itemId && byId(e2.itemId); if (it2 && issues().bad.has(it2.id)) { attachItems([it2]); renderItem(it2); } renderOverlay(); renderPanel(); } }
+  if (b.dataset.var) loadVariant(b.dataset.var);
+  if (act === 'print') printPlan();
+  if (b.dataset.pp && it) { pushHistory(); it.ppColor = b.dataset.pp; renderItem(it); renderPanel(); }
+  if (b.dataset.fc && it) { pushHistory(); it.color = b.dataset.fc; renderItem(it); renderPanel(); }
+  if (b.dataset.shelf && it) { pushHistory(); it.shelfColor = b.dataset.shelf; renderItem(it); renderPanel(); }
+  if (b.dataset.pot && it) { pushHistory(); it.pot = b.dataset.pot; renderItem(it); renderPanel(); }
+  if (b.dataset.arr) arrange(b.dataset.arr);
+  if (b.dataset.mv) moveGroup(b.dataset.mv);
+  if (b.dataset.tpl) insertTemplate(+b.dataset.tpl);
+  if (b.dataset.ac) { const c = b.dataset.ac; ui.auto.colors.has(c) ? ui.auto.colors.delete(c) : ui.auto.colors.add(c); renderPanel(); }
+  if (b.dataset.sbm) { pushHistory(); S.sb.x = b.dataset.sbm === 'center' ? q(W() / 2 - S.sb.w / 2) : 0; renderSB(); renderOverlay(); renderPanel(); }
+});
+R.addEventListener('input', e => {
+  const el = e.target, k = el.dataset.k, id = el.id;
+  const one = [...sel].map(byId).filter(Boolean), it = one.length === 1 ? one[0] : null;
+  const num = parseFloat(el.value);
+  if (id === 'aC') { ui.auto.chaos = +el.value; el.nextElementSibling.textContent = ui.auto.chaos < .2 ? 'ordentlich' : ui.auto.chaos < .6 ? 'locker' : 'wild'; return; }
+  if (id === 'aN') { ui.auto.n = +el.value; el.nextElementSibling.textContent = el.value; return; }
+  if (id === 'gridCols') { ui.gridCols = clamp(+el.value || 1, 1, 12); return; }
+  if (id === 'hang') { S.hangOffset = num || 0; return; }
+  if (k === 'sbx') { if (isNaN(num)) return; pushHistory('sbx'); S.sb.x = clamp(num, 0, W() - S.sb.w); renderSB(); renderOverlay(); return; }
+  if (k === 'sbc') { pushHistory('sbc'); S.sb.color = el.value; renderSB(); return; }
+  if (!it) return;
+  pushHistory(k + it.id);
+  if (k === 'zoom' || k === 'ox' || k === 'oy') { it[k] = num; renderItem(it); }
+  if (k === 'note') it.note = el.value;
+  if (k === 'ppColor') { it.ppColor = el.value; renderItem(it); }
+  if (k === 'shelfColor') { it.shelfColor = el.value; renderItem(it); }
+  if ((k === 'cutW' || k === 'cutH' || k === 'm') && !isNaN(num) && num > 0) { it[k] = num; renderItem(it); renderOverlay(); }
+  if (k === 'posX' && !isNaN(num)) { it.x = q(num); placeG(it); renderOverlay(); }
+  if (k === 'posB' && !isNaN(num)) { it.y = q(H() - num - dims(it).h); placeG(it); renderOverlay(); }
+});
+R.addEventListener('change', e => {
+  const el = e.target, k = el.dataset.k, id = el.id;
+  const one = [...sel].map(byId).filter(Boolean), it = one.length === 1 ? one[0] : null;
+  if (id === 'imgFile' && it) loadImage(el.files[0], it);
+  if (id === 'anchor') ui.anchor = el.value;
+  if (id === 'aAsp') ui.auto.aspect = +el.value;
+  if (id === 'aMode') { ui.auto.mode = el.value; if (ui.tab === 'set' && !sel.size) renderPanel(); }
+  if (id === 'salonAspect') ui.salonAspect = +el.value;
+  if (id === 'aL') ui.auto.large = el.checked;
+  if (id === 'autoAttach') ui.autoAttach = el.checked;
+  if (id === 'aM') ui.auto.mix = el.checked;
+  if (k === 'sbshow') { pushHistory(); S.sb.show = el.checked; renderSB(); renderOverlay(); }
+  if (k === 'pp' && it) { pushHistory(); it.pp = el.checked; renderItem(it); renderPanel(); }
+  if (k === 'green' && it) { pushHistory(); it.green = el.checked; renderItem(it); }
+  if (k === 'grip' && it) { pushHistory(); it.grip = el.checked; renderItem(it); }
+  if ((k === 'cutW' || k === 'cutH' || k === 'm') && it) renderPanel();
+});
+
+/* =====================================================================
+   BOHRPLAN (Druckansicht, im Druckdialog als PDF sichern)
+   ===================================================================== */
+function printPlan() {
+  const list = [...S.items].sort((a, b) => a.x - b.x || a.y - b.y), off = S.hangOffset, h = H();
+  const rows = list.map((it, i) => {
+    const t = T(it.typeId), r = rectOf(it), cx = r.x + r.w / 2;
+    let hang;
+    if (t.kind === 'tv') hang = `Halterung Mitte: ${fmt(cx)} / ${fmt(h - r.y - r.h / 2)}`;
+    else if (t.kind === 'record') hang = `Halter-Unterkante: ${fmt(cx)} / ${fmt(h - r.y - r.h)}`;
+    else if (t.kind === 'plant') hang = `Ring: ${fmt(cx)} / ${fmt(h - r.y - r.h * 0.55)}`;
+    else if (t.kind === 'mirror') hang = `Aufhängung: ${fmt(cx)} / ${fmt(h - r.y - 3)} (nachmessen)`;
+    else if (t.kind === 'deck') hang = `2 Halter: ${fmt(cx)} / ${fmt(h - r.y - Math.min(12, r.h * .2))} und ${fmt(h - r.y - r.h + Math.min(12, r.h * .2))}`;
+    else if (t.kind === 'shelf') {
+      // Mitte der beiden Endplatten, lokal (1,5|26) und (58,5|9), dann drehen/spiegeln wie in der Zeichnung
+      const pts = [[1.5, 26], [58.5, 9]].map(([lx, ly]) => { let x = lx, y = ly; if (it.rot) [x, y] = [35 - y, x]; if (it.flip) x = r.w - x; return [r.x + x, h - (r.y + y)]; });
+      hang = `Endplatten ca.: ${fmt(pts[0][0])} / ${fmt(pts[0][1])} und ${fmt(pts[1][0])} / ${fmt(pts[1][1])} (Anleitung prüfen)`;
+    }
+    else hang = `Nagel: ${fmt(cx)} / ${fmt(h - r.y - off)}`;
+    return { i:i + 1, it, t, r, hang };
+  });
+  let s = `<svg viewBox="-10 -10 ${S.wall.w + 20} ${h + 20}" xmlns="http://www.w3.org/2000/svg"><rect width="${S.wall.w}" height="${h}" fill="#fff" stroke="#000" stroke-width=".4"/>`;
+  if (S.sb.show) { const b = sbRect(); s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#dfe7f6" stroke="#557" stroke-width=".3"/>`; }
+  rows.forEach(({ i, t, r }) => {
+    s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${t.kind === 'tv' ? '#ddd' : '#f4f1ea'}" stroke="#333" stroke-width=".3"/>`;
+    s += `<text x="${r.x + r.w / 2}" y="${r.y + r.h / 2 + 2}" font-size="${Math.min(7, r.w / 3)}" text-anchor="middle">${i}</text>`;
+    if (t.kind === 'frame') s += `<path d="M${r.x + r.w / 2 - 1.5} ${r.y + off - 1.5} l3 3 m0 -3 l-3 3" stroke="#c00" stroke-width=".5"/>`;
+  });
+  s += `</svg>`;
+  $('#print').innerHTML = `<h1>Bohrplan Wohnzimmerwand</h1>
+    <div>Wand ${S.wall.w}×${h} cm · Abstand ${fmt(S.gap)} cm · Stand ${new Date().toLocaleDateString('de-DE')}</div>
+    <div>Alle Maße in cm, horizontal ab linker Wandkante, vertikal ab Boden. Nagelhöhe = Oberkante minus ${fmt(off)} cm Aufhänger (rotes ×). Vor dem Bohren am echten Rahmen nachmessen.</div>
+    ${s}
+    <table><thead><tr><th>#</th><th>Objekt</th><th>Außen B×H</th><th>Links</th><th>Oberkante</th><th>Aufhängung (x / Höhe)</th><th>Notiz</th></tr></thead><tbody>
+    ${rows.map(({ i, it, t, r, hang }) => `<tr><td>${i}</td><td>${esc(label(t, it))}${t.kind === 'frame' && it.pp ? ' · PP ' + fmt(it.cutW) + '×' + fmt(it.cutH) : ''}</td><td>${fmt(r.w)}×${fmt(r.h)}</td><td>${fmt(r.x)}</td><td>${fmt(h - r.y)}</td><td>${hang}</td><td>${esc(it.note)}</td></tr>`).join('')}
+    </tbody></table>`;
+  setTimeout(() => window.print(), 50);
+}
+
+/* =====================================================================
+   IMPORT / EXPORT
+   ===================================================================== */
+$('#exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(S)], { type:'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `wandplan-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000); dirty = false; toast('Plan exportiert');
+};
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(txt => {
+    try {
+      const d = JSON.parse(txt); if (d.app !== 'wandplaner' || !Array.isArray(d.items)) throw 0;
+      pushHistory(); S = Object.assign(freshState(), d);
+      DEFAULT_TYPES.forEach(t => { if (!S.types.some(x => x.id === t.id)) S.types.push({ ...t }); }); // neue Objekte auch in alten Plänen sel.clear(); syncHeader(); fit(); renderAll(); dirty = false; toast('Plan geladen');
+    } catch (err) { toast('Das ist keine Wandplaner-Datei'); }
+    e.target.value = '';
+  });
+};
+window.addEventListener('beforeunload', e => { if (needsSave) saveLocal(); if (dirty && !autosaveOk) { e.preventDefault(); e.returnValue = ''; } });
+
+/* =====================================================================
+   KOPFZEILE
+   ===================================================================== */
+function syncHeader() {
+  $('#wallW').value = S.wall.w; $('#wallH').value = S.wall.h; $('#wallC').value = S.wall.color;
+  $('#gap').value = S.gap; $('#tvGap').value = S.tvGap; $('#snap').checked = S.snap; $('#guides').checked = S.guides; $('#person').checked = S.person;
+}
+$('#wallW').onchange = e => { const v = +e.target.value; if (v >= 100) { pushHistory(); S.wall.w = v; S.sb.x = Math.min(S.sb.x, v - S.sb.w); fit(); renderAll(); } };
+$('#wallH').onchange = e => { const v = +e.target.value; if (v >= 100) { pushHistory(); const dh = v - S.wall.h; S.wall.h = v; S.items.forEach(i => i.y += dh); fit(); renderAll(); } }; // Abstand zum Boden bleibt erhalten
+$('#wallC').oninput = e => { S.wall.color = e.target.value; needsSave = true; renderStatic(); renderItems(); renderOverlay(); };
+$('#gap').onchange = e => { needsSave = true; S.gap = Math.max(0, parseFloat(e.target.value) || 0); renderOverlay(); renderPanel(); };
+$('#tvGap').onchange = e => { needsSave = true; S.tvGap = Math.max(0, parseFloat(e.target.value) || 0); renderOverlay(); renderPanel(); };
+$('#snap').onchange = e => S.snap = e.target.checked;
+$('#guides').onchange = e => { S.guides = e.target.checked; renderStatic(); };
+$('#person').onchange = e => { S.person = e.target.checked; renderStatic(); };
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+$('#zin').onclick = () => zoom(1.2); $('#zout').onclick = () => zoom(1 / 1.2); $('#zfit').onclick = fit;
+$('#printBtn').onclick = printPlan;
+stage.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.1 : 1 / 1.1); } }, { passive:false });
+window.addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(fit, 150); });
+
+function renderAll() { setSvgSize(); renderStatic(); renderSB(); renderItems(); renderOverlay(); renderLeft(); renderPanel(); updateUndo(); }
+const restored = loadLocal();
+syncHeader(); renderAll(); fit();
+if (restored) { toast('Letzter Stand wiederhergestellt'); $('#saveState').textContent = 'Automatisch gespeichert'; autosaveOk = true; }
+$('#newBtn').onclick = () => { if (!confirm('Neue, leere Wand starten? (Rückgängig geht mit Strg+Z)')) return; pushHistory(); S = freshState(); sel.clear(); syncHeader(); fit(); renderAll(); };
+</script>
+</body>
+</html>
