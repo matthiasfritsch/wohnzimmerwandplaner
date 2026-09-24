@@ -40,7 +40,8 @@ Maßstabsgetreuer Planer (alles in cm) für eine Wohnzimmerwand mit Salon-Hängu
 ### UI-Aufbau
 
 - Kopfzeile: Wandmaße + Farbe, Abstand + Ambilight, Undo/Redo, Speicherstatus (grüner Punkt, Text ab 1280 px), Bohrplan, ⋯-Menü (Neue Wand, Import, Export).
-- Schwebende Canvas-Leiste unten rechts (`#canvasbar`, fixed): Snapping/Hilfslinien/Person als Toggle-Pills, Zoom −/+ und Zoom-Anzeige in % relativ zu Fit (Klick = einpassen).
+- Seitenleisten einklappbar: Panel-Icons ganz links/rechts in der Kopfzeile, Tasten `[` / `]`, Strg/Cmd+\ für beide. Klassen `no-left`/`no-right` auf `#app` setzen die CSS-Variablen `--lw`/`--rw` auf 0. Zustand pro Browser in localStorage (`wandplaner-panels`). War die Ansicht eingepasst, wird nach dem Umklappen neu eingepasst.
+- Schwebende Canvas-Leiste unten rechts (`#canvasbar`, fixed, rückt mit `--rw` mit): Snapping/Hilfslinien/Person als Toggle-Pills, Zoom −/+ und Zoom-Anzeige in % relativ zu Fit (Klick = einpassen).
 
 ### Interaktion
 
